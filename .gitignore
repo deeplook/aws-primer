@@ -17,5 +17,5 @@ wheels/
 **/.archify/**/*.visual-check.json
 **/.archify/**/*.visual-check.html
 **/.archify/**/*.visual-check.*.png
-!**/.archify/**/*.visual-check.1440x900.light.png
-**/.archify/.DS_Store
+!**/.archify/*/*.visual-check.1440x900.light.png
+**/.archify/**/.DS_Store

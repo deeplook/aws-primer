@@ -9,7 +9,8 @@
       "url": "https://github.com/deeplook/aws-primer.git",
       "link_mode": "local-only",
       "revision": "9f4b94e50ed7e72076b631eae442e6368e269638"
-    }
+    },
+    "subtitle": "Shared workflow for Floci and AWS \u00b7 IAM wiring differs by target"
   },
   "lanes": [
     {
@@ -113,6 +114,11 @@
           "path": "src/spike-2/handler.py",
           "line": 7,
           "end_line": 18
+        },
+        {
+          "path": "src/spike-2/README.md",
+          "line": 58,
+          "end_line": 84
         }
       ]
     },
