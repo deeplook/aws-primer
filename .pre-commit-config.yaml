@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: spike-1-check-all
+        name: Check spike 1
+        entry: make SPIKE=spike-1 check-all
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: spike-2-check-all
+        name: Check spike 2
+        entry: make SPIKE=spike-2 check-all
+        language: system
+        pass_filenames: false
+        always_run: true

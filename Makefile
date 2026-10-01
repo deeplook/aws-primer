@@ -2,7 +2,7 @@ SPIKE ?= spike-1
 SPIKE_DIR := src/$(SPIKE)
 
 SPIKE_TARGETS := tools local-up local-down local-logs local-log-tail package terraform-init \
-	terraform-fmt terraform-fmt-check python-check validate check-all plan apply \
+	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan apply \
 	send-message verify destroy e2e aws-plan aws-apply aws-send-message aws-send-event aws-verify \
 	aws-e2e aws-destroy clean
 

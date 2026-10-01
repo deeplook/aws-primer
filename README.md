@@ -12,6 +12,19 @@ make SPIKE=spike-1 e2e
 make SPIKE=spike-2 e2e
 ```
 
+## Pre-commit checks
+
+Install the `pre-commit` tool, then enable the repository hook once per
+checkout:
+
+```bash
+pre-commit install
+```
+
+The config runs `check-all` for both spikes, including Terraform formatting
+and validation, Python syntax, and Bash syntax checks. These checks also run in
+CI.
+
 The default `plan`, `apply`, and `e2e` targets use Floci and test credentials.
 Spike 1's AWS targets use a separately configured AWS profile and state:
 

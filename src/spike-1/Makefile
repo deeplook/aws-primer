@@ -2,6 +2,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 
 TF_DIR := .
+TF_FORMAT_FILES := $(wildcard *.tf) floci.tfvars
 COMPOSE := docker compose --project-directory . -f compose.yaml
 FLOCI_REGION := $(shell sed -n 's/^aws_region[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' floci.tfvars)
 FLOCI_ENDPOINT := $(shell sed -n 's/^floci_endpoint_url[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' floci.tfvars)
@@ -14,7 +15,7 @@ LOCAL_AWS := $(LOCAL_AWS_ENV) aws --endpoint-url $(FLOCI_ENDPOINT)
 export MESSAGE MESSAGE_ID
 
 .PHONY: help tools local-up local-down local-logs local-log-tail package terraform-init aws-terraform-init \
-	terraform-fmt terraform-fmt-check python-check validate check-all plan \
+	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan \
 	apply send-message verify destroy e2e aws-target-check aws-plan aws-apply \
 	aws-send-message aws-verify aws-e2e aws-destroy clean
 
@@ -60,18 +61,21 @@ aws-terraform-init: ## Initialize the separate AWS Terraform state
 	@terraform -chdir=$(TF_DIR) init -reconfigure -lockfile=readonly -backend-config=path=terraform.aws.tfstate
 
 terraform-fmt: ## Format Terraform files
-	@terraform fmt -recursive $(TF_DIR)
+	@terraform fmt $(TF_FORMAT_FILES)
 
 terraform-fmt-check: ## Check Terraform formatting without changing files
-	@terraform fmt -check -recursive $(TF_DIR)
+	@terraform fmt -check $(TF_FORMAT_FILES)
 
 python-check: ## Check Python syntax without creating bytecode files
 	@python3 -c 'from pathlib import Path; compile(Path("$(TF_DIR)/handler.py").read_text(), "$(TF_DIR)/handler.py", "exec")'
 
+shell-check: ## Check shell script syntax
+	@bash -n e2e.sh e2e-aws.sh
+
 validate: terraform-init ## Validate the Terraform configuration
 	@terraform -chdir=$(TF_DIR) validate
 
-check-all: terraform-fmt-check python-check validate ## Run the safe local quality gate
+check-all: terraform-fmt-check python-check shell-check validate ## Run the safe local quality gate
 
 plan: ## Start Floci, package the function, and show the local Terraform plan
 	@$(MAKE) local-up
