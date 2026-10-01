@@ -1,8 +1,10 @@
 # Deploying spike 1 to AWS
 
 Spike 1 connects SQS → Lambda → S3 and DynamoDB. It defaults to local Floci;
-an explicit AWS target is also available. No AWS deployment has been run from
-this repository yet.
+an explicit AWS target is also available. The maintainer has run the AWS E2E
+flow locally. GitHub CI uses Floci and does not need AWS credentials; passing
+the local AWS run is evidence for this configuration and account, not a
+continuously repeated AWS deployment.
 
 ## Configure an AWS account
 

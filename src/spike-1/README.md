@@ -15,6 +15,39 @@ requests regardless of the calling identity's policies. The AWS provider's
 `test` credentials are a Floci bypass identity, so this experiment also checks
 whether Lambda's execution role is evaluated under enforcement.
 
+## What this spike demonstrates
+
+- **SQS invokes Lambda through an event source mapping.** Lambda polls the
+  queue; the handler does not call SQS to receive its event. The mapping uses
+  a batch size of one to keep this experiment's message path easy to inspect.
+  See [Lambda's SQS event source mapping guide](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).
+- **Visibility timeout gives a failed message time before it can be received
+  again.** The queue uses 60 seconds for a function with a 10-second timeout,
+  matching AWS's recommendation that the visibility timeout be at least six
+  times the function timeout ([configuration guidance](https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html)).
+  This is a retry window, not a guarantee that a message is processed only once.
+- **SQS event source mappings deliver at least once.** A retry can repeat
+  writes. This handler uses the SQS message ID for its S3 key and DynamoDB
+  partition key, so repeating this demo write replaces the same records. That
+  is a simple demonstration, not a full idempotency strategy for business
+  operations ([delivery semantics](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html)).
+  There is no queue redrive policy or partial batch failure handling in this
+  spike; the batch size of one keeps each invocation to one message.
+- **IAM permissions are scoped by resource.** The worker can write only below
+  the S3 `processed/` prefix and to the named DynamoDB table. Its deliberate
+  `s3:ListBucket` call is an assertion inside the demo handler that the
+  permission is denied. Remove that probe before adapting the handler for an
+  application; a test assertion should not run on every production message.
+
+The spike also omits customer-managed encryption keys, alarms, and log
+retention settings. Those are useful follow-up lessons, not properties this
+experiment validates.
+
+The AWS run exercises the same resource graph against AWS. It does not run in
+GitHub CI, where Floci is used without account credentials. Terraform state is
+stored in local files for this checkout; this is not a shared or locked remote
+state setup.
+
 The probe passed with Floci 2.1.0: Terraform created the IAM role and policy,
 S3 bucket, SQS queue, DynamoDB table, Lambda, and SQS event source mapping.
 Lambda consumed an SQS message and wrote it to S3 and DynamoDB using its

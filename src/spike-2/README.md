@@ -19,6 +19,40 @@ The processor validates the order and stores it with an `accepted` status. The
 SQS queue is an EventBridge target delivery DLQ; it does not capture failures
 inside a workflow execution.
 
+## What this spike demonstrates
+
+- **EventBridge routes matching events to a target.** In this spike the target
+  is a starter Lambda, which calls `StartExecution`; the state machine then
+  invokes the processor Lambda. Floci 2.1.0 did not support the direct
+  EventBridge-to-Step-Functions target used in the AWS design, so the extra
+  Lambda is an emulator workaround as well as an observable handoff.
+- **The EventBridge DLQ covers target delivery.** It can receive events that
+  EventBridge could not deliver to the starter Lambda after its retry policy
+  is exhausted (or delivery cannot be retried). See [EventBridge DLQ
+  behavior](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rule-dlq.html).
+  It does not receive failed Step Functions executions. Inspect the execution
+  itself to diagnose workflow or processor failures.
+- **Step Functions retries selected Lambda service errors.** The state
+  definition allows up to two retries for specific transient invocation errors
+  with exponential backoff. It has no `Catch` state, so a matching error that
+  remains after retries fails the execution. See [Step Functions error
+  handling](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html).
+  `PutEvents` accepting an event does not prove the target or workflow
+  completed; the E2E waits for the DynamoDB record.
+- **The order ID is the DynamoDB key.** Reprocessing the same ID writes the
+  same item, which makes this small example repeatable. It overwrites that
+  item's values; it does not demonstrate conditional writes, deduplication of
+  external side effects, or a production idempotency design.
+
+The spike also omits customer-managed encryption keys, alarms, and log
+retention settings. Those are useful follow-up lessons, not properties this
+experiment validates.
+
+The AWS E2E has also been run locally by the maintainer. CI deliberately runs
+the Floci version only and uses no AWS credentials. Terraform uses local state
+files here, so simultaneous users or CI jobs do not share a remote state or
+state lock.
+
 ## Run locally with Floci
 
 From the repository root:
