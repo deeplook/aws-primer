@@ -3,6 +3,11 @@
 This spike connects EventBridge, Step Functions, Lambda, DynamoDB, IAM, and an
 SQS delivery dead-letter queue:
 
+[Open the interactive workflow diagram](.archify/workflow-order-event-20261001-130013/order-event-workflow.html)
+for the event path, workflow steps, persistence, and EventBridge delivery DLQ.
+
+[![OrderPlaced processing workflow](.archify/workflow-order-event-20261001-130013/order-event-workflow.visual-check.1440x900.light.png)](.archify/workflow-order-event-20261001-130013/order-event-workflow.html)
+
 ```text
 OrderPlaced event -> EventBridge rule -> starter Lambda -> Step Functions -> processor Lambda -> DynamoDB
                                       \\-> SQS delivery DLQ

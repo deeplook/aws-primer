@@ -8,3 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Archify: keep editable diagram sources, HTML output, and README previews.
+# Keep generated validation evidence and non-README screenshots local.
+**/.archify/**/*.browser-check.json
+**/.archify/**/*.delivery.json
+**/.archify/**/*.finalize*.json
+**/.archify/**/*.visual-check.json
+**/.archify/**/*.visual-check.html
+**/.archify/**/*.visual-check.*.png
+!**/.archify/**/*.visual-check.1440x900.light.png
+**/.archify/.DS_Store

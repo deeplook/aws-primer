@@ -1,0 +1,259 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "OrderPlaced Processing Workflow",
+    "output": ".archify/workflow-order-event-20261001-130013/order-event-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "9f4b94e50ed7e72076b631eae442e6368e269638"
+    }
+  },
+  "lanes": [
+    {
+      "id": "intake",
+      "label": "Publish + EventBridge"
+    },
+    {
+      "id": "execution",
+      "label": "Workflow execution"
+    },
+    {
+      "id": "outcomes",
+      "label": "Stored order + delivery DLQ"
+    }
+  ],
+  "phases": [
+    {
+      "id": "publish",
+      "label": "Publish",
+      "fromCol": 0,
+      "toCol": 0
+    },
+    {
+      "id": "route",
+      "label": "Route event",
+      "fromCol": 1,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "execute",
+      "label": "Execute workflow",
+      "fromCol": 3,
+      "toCol": 4
+    },
+    {
+      "id": "persist",
+      "label": "Persist result",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "order_event",
+    "eventbridge_rule",
+    "starter_lambda",
+    "order_state_machine",
+    "processor_lambda",
+    "orders_table"
+  ],
+  "nodes": [
+    {
+      "id": "order_event",
+      "lane": "intake",
+      "col": 0,
+      "type": "external",
+      "label": "OrderPlaced",
+      "sublabel": "PutEvents entry",
+      "sources": [
+        {
+          "path": "src/spike-2/e2e.sh",
+          "line": 51,
+          "end_line": 62
+        },
+        {
+          "path": "src/spike-2/README.md",
+          "line": 6,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "eventbridge_rule",
+      "lane": "intake",
+      "col": 1,
+      "type": "cloud",
+      "label": "Bus + Rule",
+      "sublabel": "OrderPlaced match",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 275,
+          "end_line": 305
+        }
+      ]
+    },
+    {
+      "id": "starter_lambda",
+      "lane": "execution",
+      "col": 2,
+      "type": "backend",
+      "label": "Starter Lambda",
+      "sublabel": "starts with full event",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 146,
+          "end_line": 164
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 7,
+          "end_line": 18
+        }
+      ]
+    },
+    {
+      "id": "order_state_machine",
+      "lane": "execution",
+      "col": 3,
+      "type": "backend",
+      "label": "Step Functions",
+      "sublabel": "ProcessOrder \u00b7 retries",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 193,
+          "end_line": 223
+        }
+      ]
+    },
+    {
+      "id": "processor_lambda",
+      "lane": "execution",
+      "col": 4,
+      "type": "backend",
+      "label": "Processor",
+      "sublabel": "validate + persist",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 126,
+          "end_line": 144
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 21,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "orders_table",
+      "lane": "outcomes",
+      "col": 5,
+      "type": "database",
+      "label": "Orders Table",
+      "sublabel": "status = accepted",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 39,
+          "end_line": 48
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 31,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "delivery_dlq",
+      "lane": "outcomes",
+      "col": 2,
+      "type": "messagebus",
+      "label": "SQS DLQ",
+      "sublabel": "target failures",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 225,
+          "end_line": 242
+        },
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 288,
+          "end_line": 305
+        },
+        {
+          "path": "src/spike-2/README.md",
+          "line": 11,
+          "end_line": 15
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "publish-order",
+      "from": "order_event",
+      "to": "eventbridge_rule",
+      "label": "PutEvents \u00b7 OrderPlaced",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "route-to-starter",
+      "from": "eventbridge_rule",
+      "to": "starter_lambda",
+      "label": "target invokes Lambda",
+      "role": "main"
+    },
+    {
+      "id": "start-workflow",
+      "from": "starter_lambda",
+      "to": "order_state_machine",
+      "label": "StartExecution \u00b7 full event",
+      "variant": "emphasis",
+      "role": "async"
+    },
+    {
+      "id": "invoke-processor",
+      "from": "order_state_machine",
+      "to": "processor_lambda",
+      "label": "Task \u00b7 event detail",
+      "role": "main"
+    },
+    {
+      "id": "persist-order",
+      "from": "processor_lambda",
+      "to": "orders_table",
+      "label": "PutItem \u00b7 accepted",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "eventbridge-delivery-failure",
+      "from": "eventbridge_rule",
+      "to": "delivery_dlq",
+      "label": "target delivery exhausted",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Failure Boundary",
+      "items": [
+        "The SQS queue is EventBridge's target-delivery DLQ; it does not receive Step Functions execution failures.",
+        "Step Functions retries selected Lambda service errors up to two attempts; no workflow-level DLQ is configured.",
+        "A successful PutEvents response does not prove that the target invocation completed."
+      ]
+    }
+  ]
+}

@@ -4,6 +4,12 @@ This Terraform spike connects SQS, Lambda, S3, DynamoDB, and IAM. Floci is the
 default target and runs in Docker; it is not installed with `uv`. The same
 Terraform resources can also target a real AWS account using an explicit AWS
 configuration and separate Terraform state.
+
+[Open the interactive data-flow diagram](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html)
+for the SQS-to-Lambda-to-storage path and the worker role's permission scope.
+
+[![SQS message data flow](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.visual-check.1440x900.light.png)](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html)
+
 IAM policy enforcement is enabled here; without that setting, Floci allows
 requests regardless of the calling identity's policies. The AWS provider's
 `test` credentials are a Floci bypass identity, so this experiment also checks

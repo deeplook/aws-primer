@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "SQS Message Persistence",
+    "output": ".archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "9f4b94e50ed7e72076b631eae442e6368e269638"
+    }
+  },
+  "stages": [
+    {
+      "label": "Receive"
+    },
+    {
+      "label": "Process"
+    },
+    {
+      "label": "Persist"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "jobs_queue",
+      "type": "messagebus",
+      "label": "SQS Jobs",
+      "sublabel": "one message per batch",
+      "stage": 0,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 95,
+          "end_line": 98
+        },
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 132,
+          "end_line": 136
+        }
+      ]
+    },
+    {
+      "id": "worker_lambda",
+      "type": "backend",
+      "label": "Worker Lambda",
+      "sublabel": "SQS event source mapping",
+      "tag": "execution role",
+      "stage": 1,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 111,
+          "end_line": 136
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 7,
+          "end_line": 24
+        },
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 58,
+          "end_line": 87
+        }
+      ]
+    },
+    {
+      "id": "uploads_bucket",
+      "type": "database",
+      "label": "S3 Uploads",
+      "sublabel": "processed/{messageId}.txt",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 89,
+          "end_line": 93
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 14,
+          "end_line": 21
+        }
+      ]
+    },
+    {
+      "id": "processed_table",
+      "type": "database",
+      "label": "Processed Table",
+      "sublabel": "message_id + body",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 100,
+          "end_line": 109
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 22,
+          "end_line": 24
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "queue-to-worker",
+      "from": "jobs_queue",
+      "to": "worker_lambda",
+      "label": "SQS record",
+      "classification": "event source mapping \u00b7 batch size 1",
+      "variant": "emphasis",
+      "labelAt": [
+        208,
+        201
+      ]
+    },
+    {
+      "id": "worker-to-s3",
+      "from": "worker_lambda",
+      "to": "uploads_bucket",
+      "label": "PutObject body",
+      "classification": "processed/{messageId}.txt",
+      "variant": "default",
+      "route": "straight",
+      "labelAt": [
+        423,
+        108
+      ]
+    },
+    {
+      "id": "worker-to-dynamodb",
+      "from": "worker_lambda",
+      "to": "processed_table",
+      "label": "PutItem body",
+      "classification": "key = message_id",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Execution Role Scope",
+      "items": [
+        "SQS receive, delete, and queue-attribute access is scoped to the jobs queue.",
+        "S3 PutObject is limited to the processed/ prefix; DynamoDB PutItem is limited to the processed table.",
+        "The handler probes s3:ListBucket and expects IAM enforcement to deny it."
+      ]
+    }
+  ]
+}
