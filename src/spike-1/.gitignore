@@ -1,0 +1,6 @@
+.terraform/
+data/
+terraform.tfstate*
+terraform.aws.tfstate*
+worker.zip
+aws.tfvars
