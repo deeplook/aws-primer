@@ -32,7 +32,7 @@ provider "aws" {
 
 locals {
   aws_account_id  = var.deployment_target == "floci" ? "000000000000" : var.aws_account_id
-  resource_prefix = var.deployment_target == "floci" ? "aws-primer-local" : "aws-primer-${var.aws_account_id}"
+  resource_prefix = var.deployment_target == "floci" ? "aws-primer-spike-1" : "aws-primer-${var.aws_account_id}-spike-1"
 }
 
 resource "aws_iam_role" "worker" {

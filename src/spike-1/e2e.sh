@@ -34,9 +34,6 @@ export AWS_CONFIG_FILE=/dev/null
 export AWS_SHARED_CREDENTIALS_FILE=/dev/null
 
 endpoint="${AWS_ENDPOINT_URL:-http://localhost:4566}"
-queue_url="$endpoint/000000000000/aws-primer-local-jobs"
-bucket="aws-primer-local-uploads"
-table="aws-primer-local-processed"
 message_body="aws-primer-e2e-$(date +%s)-$$"
 
 aws_local() {
@@ -51,6 +48,10 @@ terraform -chdir="$spike_dir" validate
 # Provision the local stack, then send one uniquely named SQS message.
 stack_touched=1
 terraform -chdir="$spike_dir" apply -var-file=floci.tfvars -auto-approve
+
+queue_url="$(terraform -chdir="$spike_dir" output -raw queue_url)"
+bucket="$(terraform -chdir="$spike_dir" output -raw uploads_bucket_name)"
+table="$(terraform -chdir="$spike_dir" output -raw processed_table_name)"
 
 message_id="$(aws_local sqs send-message \
     --queue-url "$queue_url" \

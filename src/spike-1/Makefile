@@ -8,9 +8,6 @@ FLOCI_ENDPOINT := $(shell sed -n 's/^floci_endpoint_url[[:space:]]*=[[:space:]]*
 AWS_TFVARS := aws.tfvars
 AWS_REGION := $(shell if test -f $(AWS_TFVARS); then sed -n 's/^aws_region[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' $(AWS_TFVARS); fi)
 AWS_ACCOUNT_ID := $(shell if test -f $(AWS_TFVARS); then sed -n 's/^aws_account_id[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' $(AWS_TFVARS); fi)
-QUEUE_URL := $(FLOCI_ENDPOINT)/000000000000/aws-primer-local-jobs
-BUCKET := aws-primer-local-uploads
-TABLE := aws-primer-local-processed
 LOCAL_AWS_ENV := AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=$(FLOCI_REGION) AWS_EC2_METADATA_DISABLED=true AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null
 LOCAL_AWS := $(LOCAL_AWS_ENV) aws --endpoint-url $(FLOCI_ENDPOINT)
 
@@ -92,18 +89,22 @@ apply: ## Start Floci and apply the stack to its localhost endpoint
 
 send-message: ## Send a test message (set MESSAGE=...)
 	@test -n "$${MESSAGE:-}" || { echo "usage: make send-message MESSAGE='hello'" >&2; exit 2; }
-	@$(LOCAL_AWS) sqs send-message --queue-url $(QUEUE_URL) --message-body "$$MESSAGE"
+	@queue_url="$$(terraform -chdir=$(TF_DIR) output -raw queue_url)"; \
+	$(LOCAL_AWS) sqs send-message --queue-url "$$queue_url" --message-body "$$MESSAGE"
 
 verify: ## Verify one message (set MESSAGE_ID=... MESSAGE=...)
 	@test -n "$${MESSAGE_ID:-}" -a -n "$${MESSAGE:-}" || { echo "usage: make verify MESSAGE_ID=... MESSAGE='hello'" >&2; exit 2; }
-	@$(LOCAL_AWS) s3api head-object --bucket $(BUCKET) --key "processed/$$MESSAGE_ID.txt"
-	@$(LOCAL_AWS) dynamodb get-item --table-name $(TABLE) --key "{\"message_id\":{\"S\":\"$$MESSAGE_ID\"}}" --query 'Item.body.S' --output text | grep -Fx -- "$$MESSAGE"
+	@bucket="$$(terraform -chdir=$(TF_DIR) output -raw uploads_bucket_name)"; \
+	table="$$(terraform -chdir=$(TF_DIR) output -raw processed_table_name)"; \
+	$(LOCAL_AWS) s3api head-object --bucket "$$bucket" --key "processed/$$MESSAGE_ID.txt"; \
+	$(LOCAL_AWS) dynamodb get-item --table-name "$$table" --key "{\"message_id\":{\"S\":\"$$MESSAGE_ID\"}}" --query 'Item.body.S' --output text | grep -Fx -- "$$MESSAGE"
 
 destroy: ## Remove local Terraform resources (keeps Floci running)
 	@$(MAKE) local-up
 	@$(MAKE) terraform-init
-	@if $(LOCAL_AWS) s3api head-bucket --bucket $(BUCKET) >/dev/null 2>&1; then \
-		$(LOCAL_AWS) s3 rm s3://$(BUCKET)/processed/ --recursive; \
+	@bucket="$$(terraform -chdir=$(TF_DIR) output -raw uploads_bucket_name 2>/dev/null || true)"; \
+	if [[ -n "$$bucket" ]] && $(LOCAL_AWS) s3api head-bucket --bucket "$$bucket" >/dev/null 2>&1; then \
+		$(LOCAL_AWS) s3 rm "s3://$$bucket/processed/" --recursive; \
 	fi
 	@terraform -chdir=$(TF_DIR) destroy -var-file=floci.tfvars -auto-approve -parallelism=1
 

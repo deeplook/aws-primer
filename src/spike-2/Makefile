@@ -11,9 +11,6 @@ AWS_TARGET := $(shell if test -f $(AWS_TFVARS); then sed -n 's/^deployment_targe
 COMPOSE := docker compose --project-directory . -f compose.yaml
 LOCAL_AWS_ENV := AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=$(FLOCI_REGION) AWS_EC2_METADATA_DISABLED=true AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null
 LOCAL_AWS := $(LOCAL_AWS_ENV) aws --endpoint-url $(FLOCI_ENDPOINT)
-BUS := aws-primer-spike-2-orders
-TABLE := aws-primer-spike-2-orders
-
 export ORDER_ID CUSTOMER_ID AMOUNT_CENTS
 
 .PHONY: help tools local-up local-down local-logs local-log-tail package terraform-init aws-terraform-init \
@@ -92,12 +89,14 @@ apply: ## Start Floci and apply the stack to its localhost endpoint
 
 send-event: ## Publish an OrderPlaced event locally (set ORDER_ID=...)
 	@test -n "$${ORDER_ID:-}" || { echo "usage: make send-event ORDER_ID=..." >&2; exit 2; }
-	@entries="$$(ORDER_ID="$$ORDER_ID" CUSTOMER_ID="$${CUSTOMER_ID:-demo-customer}" AMOUNT_CENTS="$${AMOUNT_CENTS:-4200}" python3 -c 'import json, os; detail={"order_id":os.environ["ORDER_ID"],"customer_id":os.environ["CUSTOMER_ID"],"amount_cents":int(os.environ["AMOUNT_CENTS"])}; print(json.dumps([{"Source":"aws-primer.orders","DetailType":"OrderPlaced","Detail":json.dumps(detail),"EventBusName":"$(BUS)"}]))')"; \
+	@bus="$$(terraform -chdir=$(TF_DIR) output -raw event_bus_name)"; \
+	entries="$$(ORDER_ID="$$ORDER_ID" CUSTOMER_ID="$${CUSTOMER_ID:-demo-customer}" AMOUNT_CENTS="$${AMOUNT_CENTS:-4200}" EVENT_BUS="$$bus" python3 -c 'import json, os; detail={"order_id":os.environ["ORDER_ID"],"customer_id":os.environ["CUSTOMER_ID"],"amount_cents":int(os.environ["AMOUNT_CENTS"])}; print(json.dumps([{"Source":"aws-primer.orders","DetailType":"OrderPlaced","Detail":json.dumps(detail),"EventBusName":os.environ["EVENT_BUS"]}]))')"; \
 	$(LOCAL_AWS) events put-events --entries "$$entries"
 
 verify: ## Verify a stored local order (set ORDER_ID=...)
 	@test -n "$${ORDER_ID:-}" || { echo "usage: make verify ORDER_ID=..." >&2; exit 2; }
-	@$(LOCAL_AWS) dynamodb get-item --table-name $(TABLE) --key "{\"order_id\":{\"S\":\"$$ORDER_ID\"}}" --query 'Item.{status:status.S,amount:amount_cents.N}' --output json
+	@table="$$(terraform -chdir=$(TF_DIR) output -raw orders_table_name)"; \
+	$(LOCAL_AWS) dynamodb get-item --table-name "$$table" --key "{\"order_id\":{\"S\":\"$$ORDER_ID\"}}" --query 'Item.{status:status.S,amount:amount_cents.N}' --output json
 
 destroy: ## Remove local Terraform resources (keeps Floci running)
 	@$(MAKE) local-up

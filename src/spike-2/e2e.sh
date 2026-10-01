@@ -33,10 +33,7 @@ export AWS_CONFIG_FILE=/dev/null
 export AWS_SHARED_CREDENTIALS_FILE=/dev/null
 
 endpoint="${AWS_ENDPOINT_URL:-http://localhost:4566}"
-bus="aws-primer-spike-2-orders"
-table="aws-primer-spike-2-orders"
 order_id="order-$(date +%s)-$$"
-entries="$(ORDER_ID="$order_id" python3 -c 'import json, os; detail={"order_id":os.environ["ORDER_ID"],"customer_id":"e2e-customer","amount_cents":4200}; print(json.dumps([{"Source":"aws-primer.orders","DetailType":"OrderPlaced","Detail":json.dumps(detail),"EventBusName":"aws-primer-spike-2-orders"}]))')"
 
 aws_local() {
     aws --endpoint-url "$endpoint" "$@"
@@ -50,6 +47,10 @@ terraform -chdir="$spike_dir" validate
 # Provision the event workflow, then publish an OrderPlaced event.
 stack_touched=1
 terraform -chdir="$spike_dir" apply -var-file=floci.tfvars -auto-approve
+
+bus="$(terraform -chdir="$spike_dir" output -raw event_bus_name)"
+table="$(terraform -chdir="$spike_dir" output -raw orders_table_name)"
+entries="$(ORDER_ID="$order_id" EVENT_BUS="$bus" python3 -c 'import json, os; detail={"order_id":os.environ["ORDER_ID"],"customer_id":"e2e-customer","amount_cents":4200}; print(json.dumps([{"Source":"aws-primer.orders","DetailType":"OrderPlaced","Detail":json.dumps(detail),"EventBusName":os.environ["EVENT_BUS"]}]))')"
 
 failed_entries="$(aws_local events put-events \
     --entries "$entries" \
