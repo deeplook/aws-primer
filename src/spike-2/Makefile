@@ -72,7 +72,7 @@ python-check: ## Check Python syntax without creating bytecode files
 shell-check: ## Check shell script syntax
 	@bash -n e2e.sh e2e-aws.sh
 
-validate: terraform-init ## Validate the Terraform configuration
+validate: package terraform-init ## Package the handlers and validate the Terraform configuration
 	@terraform -chdir=$(TF_DIR) validate
 
 check-all: terraform-fmt-check python-check shell-check validate ## Run the safe local quality gate
