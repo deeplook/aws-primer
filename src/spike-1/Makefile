@@ -16,8 +16,8 @@ export MESSAGE MESSAGE_ID
 
 .PHONY: help tools local-up local-down local-logs local-log-tail package terraform-init aws-terraform-init \
 	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan \
-	apply send-message verify destroy e2e aws-target-check aws-plan aws-apply \
-	aws-send-message aws-verify aws-e2e aws-destroy clean
+	apply send-message verify destroy e2e iam-probe aws-target-check aws-plan aws-apply \
+	aws-send-message aws-verify aws-e2e aws-iam-probe aws-destroy clean
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -67,7 +67,7 @@ terraform-fmt-check: ## Check Terraform formatting without changing files
 	@terraform fmt -check $(TF_FORMAT_FILES)
 
 python-check: ## Check Python syntax without creating bytecode files
-	@python3 -c 'from pathlib import Path; compile(Path("$(TF_DIR)/handler.py").read_text(), "$(TF_DIR)/handler.py", "exec")'
+	@python3 -c 'from pathlib import Path; [compile(Path(name).read_text(), name, "exec") for name in ("handler.py", "assert_iam_probe.py")]'
 
 shell-check: ## Check shell script syntax
 	@bash -n e2e.sh e2e-aws.sh
@@ -115,6 +115,14 @@ destroy: ## Remove local Terraform resources (keeps Floci running)
 e2e: ## Run the full local SQS -> Lambda -> S3 + DynamoDB flow, then clean up
 	@AWS_DEFAULT_REGION="$(FLOCI_REGION)" AWS_ENDPOINT_URL="$(FLOCI_ENDPOINT)" bash e2e.sh
 
+iam-probe: ## Assert the Lambda execution role is denied s3:ListBucket in Floci
+	@$(MAKE) terraform-init
+	@function_name="$$(terraform -chdir=$(TF_DIR) output -raw worker_function_name)"; \
+	response="$$(mktemp)"; trap 'rm -f "$$response"' EXIT; \
+	$(LOCAL_AWS) lambda invoke --function-name "$$function_name" \
+		--payload '{"iam_probe":true}' --cli-binary-format raw-in-base64-out "$$response" >/dev/null; \
+	python3 assert_iam_probe.py "$$response"
+
 aws-target-check: ## Confirm AWS profile and configured account ID match
 	@test -f $(AWS_TFVARS) || { echo "copy aws.tfvars.example to aws.tfvars and set the account ID" >&2; exit 2; }
 	@test -n "$${AWS_PROFILE:-}" || { echo "set AWS_PROFILE to an authenticated profile" >&2; exit 2; }
@@ -157,6 +165,16 @@ aws-verify: ## Verify AWS S3 and DynamoDB writes (set AWS_PROFILE and MESSAGE_ID
 
 aws-e2e: ## Deploy and verify one AWS message; leaves resources running (set AWS_PROFILE)
 	@AWS_PROFILE="$${AWS_PROFILE:-}" bash e2e-aws.sh
+
+aws-iam-probe: ## Assert the Lambda execution role is denied s3:ListBucket in AWS
+	@$(MAKE) aws-target-check
+	@$(MAKE) aws-terraform-init
+	@function_name="$$(AWS_PROFILE="$${AWS_PROFILE}" terraform -chdir=$(TF_DIR) output -raw worker_function_name)"; \
+	response="$$(mktemp)"; trap 'rm -f "$$response"' EXIT; \
+	aws --profile "$${AWS_PROFILE}" --region "$(AWS_REGION)" lambda invoke \
+		--function-name "$$function_name" --payload '{"iam_probe":true}' \
+		--cli-binary-format raw-in-base64-out "$$response" >/dev/null; \
+	python3 assert_iam_probe.py "$$response"
 
 aws-destroy: ## Destroy the AWS stack only when its S3 bucket is empty (set AWS_PROFILE)
 	@$(MAKE) aws-target-check

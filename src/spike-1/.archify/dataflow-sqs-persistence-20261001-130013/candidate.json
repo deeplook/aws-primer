@@ -10,7 +10,7 @@
       "link_mode": "local-only",
       "revision": "9f4b94e50ed7e72076b631eae442e6368e269638"
     },
-    "subtitle": "Shared flow for Floci and AWS \u00b7 IAM probe run on Floci"
+    "subtitle": "Shared data path for Floci and AWS \u00b7 E2E-only IAM probe"
   },
   "stages": [
     {
@@ -153,7 +153,7 @@
       "items": [
         "SQS receive, delete, and queue-attribute access is scoped to the jobs queue.",
         "S3 PutObject is limited to the processed/ prefix; DynamoDB PutItem is limited to the processed table.",
-        "The handler probes s3:ListBucket and expects IAM enforcement to deny it."
+        "E2E directly invokes the worker in IAM probe mode and requires s3:ListBucket to return AccessDenied; normal SQS processing skips the probe."
       ]
     }
   ]

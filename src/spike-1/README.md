@@ -35,9 +35,10 @@ whether Lambda's execution role is evaluated under enforcement.
   spike; the batch size of one keeps each invocation to one message.
 - **IAM permissions are scoped by resource.** The worker can write only below
   the S3 `processed/` prefix and to the named DynamoDB table. Its deliberate
-  `s3:ListBucket` call is an assertion inside the demo handler that the
-  permission is denied. Remove that probe before adapting the handler for an
-  application; a test assertion should not run on every production message.
+  `s3:ListBucket` permission is absent. The E2E invokes the Lambda separately
+  with an IAM probe event and requires the result to be `AccessDenied`; normal
+  SQS messages do not run the probe. This exercises the Lambda execution role
+  rather than only inspecting the policy document.
 
 The spike also omits customer-managed encryption keys, alarms, and log
 retention settings. Those are useful follow-up lessons, not properties this

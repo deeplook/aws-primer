@@ -29,8 +29,9 @@ make SPIKE=spike-2 e2e
 
 Each local E2E starts Floci, provisions the spike, exercises one message or
 event, checks the resulting data, and cleans up the Terraform resources and
-container. Floci's data directory is retained locally so you can inspect it or
-reset it yourself.
+container. Spike 1 also invokes a separate IAM probe under the Lambda execution
+role. Floci's data directory is retained locally so you can inspect it or reset
+it yourself.
 
 ## Pre-commit checks
 

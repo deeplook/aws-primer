@@ -5,8 +5,23 @@ from botocore.exceptions import ClientError
 
 
 def handler(event, context):
-    records = event.get("Records", [])
     s3 = boto3.client("s3", endpoint_url=os.environ.get("AWS_ENDPOINT_URL"))
+
+    if event.get("iam_probe") is True:
+        try:
+            s3.list_objects_v2(Bucket=os.environ["OUTPUT_BUCKET"])
+        except ClientError as error:
+            code = error.response.get("Error", {}).get("Code")
+            if code != "AccessDenied":
+                raise
+            return {
+                "probe": "list_bucket",
+                "result": "denied",
+                "error_code": code,
+            }
+        raise RuntimeError("IAM probe failed: s3:ListBucket was allowed")
+
+    records = event.get("Records", [])
     dynamodb = boto3.resource(
         "dynamodb", endpoint_url=os.environ.get("AWS_ENDPOINT_URL")
     )
@@ -23,13 +38,5 @@ def handler(event, context):
             Item={"message_id": record["messageId"], "body": message_body}
         )
         print(f"stored SQS message at s3://{os.environ['OUTPUT_BUCKET']}/{key}")
-
-    try:
-        s3.list_objects_v2(Bucket=os.environ["OUTPUT_BUCKET"])
-    except ClientError as error:
-        code = error.response["Error"]["Code"]
-        print(f"ungranted s3:ListBucket correctly denied: {code}")
-    else:
-        raise RuntimeError("IAM check failed: s3:ListBucket was not granted")
 
     return {"processed": len(records)}

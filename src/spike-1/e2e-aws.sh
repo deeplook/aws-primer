@@ -11,6 +11,7 @@ fi
 
 make -C "$spike_dir" aws-target-check
 make -C "$spike_dir" aws-apply
+make -C "$spike_dir" aws-iam-probe AWS_PROFILE="$profile"
 
 region="$(sed -n 's/^aws_region[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$spike_dir/aws.tfvars")"
 queue_url="$(AWS_PROFILE="$profile" terraform -chdir="$spike_dir" output -raw queue_url)"

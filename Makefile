@@ -11,8 +11,8 @@ SPIKE_2_EVIDENCE_DIR := $(SPIKE_2_DIAGRAM_DIR)/runs/$(ARCHIFY_RUN_ID)
 
 SPIKE_TARGETS := tools local-up local-down local-logs local-log-tail package terraform-init \
 	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan apply \
-	send-message verify destroy e2e aws-plan aws-apply aws-send-message aws-send-event aws-verify \
-	aws-e2e aws-destroy clean
+	send-message verify destroy e2e iam-probe aws-plan aws-apply aws-send-message aws-send-event aws-verify \
+	aws-e2e aws-iam-probe aws-destroy clean
 
 .PHONY: help list diagrams diagram-spike-1 diagram-spike-2 $(SPIKE_TARGETS)
 

@@ -48,6 +48,7 @@ terraform -chdir="$spike_dir" validate
 # Provision the local stack, then send one uniquely named SQS message.
 stack_touched=1
 terraform -chdir="$spike_dir" apply -var-file=floci.tfvars -auto-approve
+make -C "$spike_dir" iam-probe
 
 queue_url="$(terraform -chdir="$spike_dir" output -raw queue_url)"
 bucket="$(terraform -chdir="$spike_dir" output -raw uploads_bucket_name)"

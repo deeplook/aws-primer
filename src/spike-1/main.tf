@@ -147,3 +147,7 @@ output "uploads_bucket_name" {
 output "processed_table_name" {
   value = aws_dynamodb_table.processed.name
 }
+
+output "worker_function_name" {
+  value = aws_lambda_function.worker.function_name
+}

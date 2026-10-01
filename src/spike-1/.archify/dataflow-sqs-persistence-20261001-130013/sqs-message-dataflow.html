@@ -4980,7 +4980,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <div class="pulse-dot"></div>
         <h1>SQS Message Persistence</h1>
       </div>
-      <p class="subtitle">Shared flow for Floci and AWS · IAM probe run on Floci</p>
+      <p class="subtitle">Shared data path for Floci and AWS · E2E-only IAM probe</p>
     </div>
 
     <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/deeplook/aws-primer","revision":"9f4b94e50ed7e72076b631eae442e6368e269638","shortRevision":"9f4b94e","label":"deeplook/aws-primer","linkMode":"local-only"},"referenceCount":9,"nodes":{"jobs_queue":[{"path":"src/spike-1/main.tf","line":95,"endLine":98},{"path":"src/spike-1/main.tf","line":132,"endLine":136}],"worker_lambda":[{"path":"src/spike-1/main.tf","line":58,"endLine":136},{"path":"src/spike-1/handler.py","line":7,"endLine":24},{"path":"src/spike-1/README.md","line":3,"endLine":18}],"uploads_bucket":[{"path":"src/spike-1/main.tf","line":89,"endLine":93},{"path":"src/spike-1/handler.py","line":14,"endLine":21}],"processed_table":[{"path":"src/spike-1/main.tf","line":100,"endLine":109},{"path":"src/spike-1/handler.py","line":22,"endLine":24}]}}</script>
@@ -4990,7 +4990,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
       <svg viewBox="0 0 940 720" data-reader-fit="intrinsic-height" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase">
         <title id="archify-diagram-title">SQS Message Persistence</title>
-        <desc id="archify-diagram-description">Shared flow for Floci and AWS · IAM probe run on Floci</desc>
+        <desc id="archify-diagram-description">Shared data path for Floci and AWS · E2E-only IAM probe</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5296,7 +5296,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <ul>
           <li>SQS receive, delete, and queue-attribute access is scoped to the jobs queue.</li>
           <li>S3 PutObject is limited to the processed/ prefix; DynamoDB PutItem is limited to the processed table.</li>
-          <li>The handler probes s3:ListBucket and expects IAM enforcement to deny it.</li>
+          <li>E2E directly invokes the worker in IAM probe mode and requires s3:ListBucket to return AccessDenied; normal SQS processing skips the probe.</li>
         </ul>
       </div>
     </div>
