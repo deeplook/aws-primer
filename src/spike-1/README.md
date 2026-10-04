@@ -69,6 +69,8 @@ Use `make SPIKE=spike-2 help` to inspect the second spike's targets.
 To inspect the local targets, use `make help`. `make apply` starts Floci,
 packages the Lambda, and applies the local stack; `make destroy` removes the
 Floci resources and leaves Floci running. `make local-down` stops Floci.
+`make local-clean` destroys the local stack, stops Floci, and removes its
+persistent data and downloaded Terraform plugins.
 
 For AWS, copy `aws.tfvars.example` to `aws.tfvars`, set the account ID and
 Region, authenticate an AWS CLI profile, then use `make aws-plan`,

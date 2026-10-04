@@ -9,7 +9,7 @@ SPIKE_2_DIAGRAM_DIR := src/spike-2/.archify/workflow-order-event-20261001-130013
 SPIKE_1_EVIDENCE_DIR := $(SPIKE_1_DIAGRAM_DIR)/runs/$(ARCHIFY_RUN_ID)
 SPIKE_2_EVIDENCE_DIR := $(SPIKE_2_DIAGRAM_DIR)/runs/$(ARCHIFY_RUN_ID)
 
-SPIKE_TARGETS := tools local-up local-down local-logs local-log-tail package terraform-init \
+SPIKE_TARGETS := tools local-up local-down local-clean local-logs local-log-tail package terraform-init \
 	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan apply \
 	send-message verify destroy e2e iam-probe aws-plan aws-apply aws-send-message aws-send-event aws-verify \
 	aws-e2e aws-iam-probe aws-destroy clean

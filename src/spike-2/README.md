@@ -65,7 +65,8 @@ make SPIKE=spike-2 e2e
 The E2E target applies the local stack, publishes an event, checks the expected
 order status and amount in DynamoDB, then destroys the stack and stops Floci.
 `floci.tfvars` selects the Floci endpoints and local region. Local Terraform
-state is stored in `terraform.tfstate`.
+state is stored in `terraform.tfstate`. To also remove Floci's saved data and
+Terraform's downloaded provider plugins, run `make SPIKE=spike-2 local-clean`.
 
 ## Deploy to AWS
 

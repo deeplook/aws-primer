@@ -14,7 +14,7 @@ LOCAL_AWS := $(LOCAL_AWS_ENV) aws --endpoint-url $(FLOCI_ENDPOINT)
 
 export MESSAGE MESSAGE_ID
 
-.PHONY: help tools local-up local-down local-logs local-log-tail package terraform-init aws-terraform-init \
+.PHONY: help tools local-up local-down local-clean local-logs local-log-tail package terraform-init aws-terraform-init \
 	terraform-fmt terraform-fmt-check python-check shell-check validate check-all plan \
 	apply send-message verify destroy e2e iam-probe aws-target-check aws-plan aws-apply \
 	aws-send-message aws-verify aws-e2e aws-iam-probe aws-destroy clean
@@ -43,6 +43,12 @@ local-up: tools ## Start Floci locally and wait until its AWS API responds
 
 local-down: ## Stop Floci without removing its ignored local data directory
 	@$(COMPOSE) down
+
+local-clean: ## Destroy the local stack, stop Floci, and remove local data and Terraform plugins
+	@$(MAKE) destroy
+	@$(MAKE) local-down
+	@rm -rf data .terraform
+	@echo "Removed local Floci data and Terraform's downloaded provider plugins."
 
 local-logs: ## Follow Floci logs
 	@$(COMPOSE) logs --follow floci
