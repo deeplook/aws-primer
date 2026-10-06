@@ -1,0 +1,10 @@
+services:
+  floci:
+    image: floci/floci:2.1.0
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./data:/app/data
+    environment:
+      FLOCI_STORAGE_MODE: hybrid
+      FLOCI_SERVICES_S3_ENFORCE_AUTH: "true"

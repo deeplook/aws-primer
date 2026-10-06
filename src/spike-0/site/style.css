@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light;
+  font: 16px/1.6 system-ui, sans-serif;
+  color: #182b3a;
+  background: #f3f7f8;
+}
+
+body {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+}
+
+main {
+  width: min(38rem, calc(100% - 3rem));
+  padding: 3rem;
+  border: 1px solid #d2e0e5;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 1rem 3rem #182b3a12;
+}
+
+.eyebrow {
+  color: #176b71;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+button {
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  color: white;
+  background: #176b71;
+  font: inherit;
+  cursor: pointer;
+}

@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Site Files to Visitor Data Flow",
+    "output": "build/diagrams/archify/dataflow-site-to-visitor.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "37a337ff9cdcb3398c7318262f6f3be879838576"
+    },
+    "viewBox": [
+      1080,
+      560
+    ]
+  },
+  "stages": [
+    {
+      "label": "Sources"
+    },
+    {
+      "label": "Provision"
+    },
+    {
+      "label": "Store + gate"
+    },
+    {
+      "label": "Serve"
+    },
+    {
+      "label": "Consume"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "site",
+      "type": "frontend",
+      "label": "site/",
+      "sublabel": "html, css, js",
+      "stage": 0,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 78,
+          "end_line": 80,
+          "label": "fileset site/*"
+        }
+      ]
+    },
+    {
+      "id": "tfvars",
+      "type": "backend",
+      "label": "Target tfvars",
+      "sublabel": "floci or aws",
+      "stage": 0,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-0/variables.tf",
+          "line": 6,
+          "end_line": 15,
+          "label": "deployment_target"
+        }
+      ]
+    },
+    {
+      "id": "tf",
+      "type": "backend",
+      "label": "Terraform",
+      "sublabel": "main.tf",
+      "stage": 1,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 82,
+          "end_line": 96,
+          "label": "aws_s3_object.site"
+        }
+      ]
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "Bucket policy",
+      "sublabel": "public GetObject",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 54,
+          "end_line": 68,
+          "label": "aws_s3_bucket_policy"
+        }
+      ]
+    },
+    {
+      "id": "bucket",
+      "type": "database",
+      "label": "S3 objects",
+      "sublabel": "typed by extension",
+      "stage": 2,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 82,
+          "end_line": 96,
+          "label": "content_type lookup"
+        }
+      ]
+    },
+    {
+      "id": "endpoint",
+      "type": "cloud",
+      "label": "Website endpoint",
+      "sublabel": "HTTP",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 98,
+          "end_line": 104,
+          "label": "outputs"
+        }
+      ]
+    },
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "browser or E2E curl",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 52,
+          "end_line": 57,
+          "label": "fetch + checks"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "files",
+      "from": "site",
+      "to": "tf",
+      "label": "files",
+      "classification": "public content",
+      "variant": "emphasis"
+    },
+    {
+      "id": "target",
+      "from": "tfvars",
+      "to": "tf",
+      "label": "target + Region",
+      "classification": "config",
+      "variant": "dashed"
+    },
+    {
+      "id": "upload",
+      "from": "tf",
+      "to": "bucket",
+      "label": "upload + Content-Type",
+      "classification": "public content",
+      "variant": "emphasis"
+    },
+    {
+      "id": "grant",
+      "from": "tf",
+      "to": "policy",
+      "label": "public read grant",
+      "classification": "access policy",
+      "variant": "security"
+    },
+    {
+      "id": "read",
+      "from": "bucket",
+      "to": "endpoint",
+      "label": "object bytes",
+      "classification": "public content",
+      "variant": "emphasis"
+    },
+    {
+      "id": "allow",
+      "from": "policy",
+      "to": "endpoint",
+      "label": "allows anonymous",
+      "classification": "access policy",
+      "variant": "security"
+    },
+    {
+      "id": "response",
+      "from": "endpoint",
+      "to": "visitor",
+      "label": "200 + Content-Type",
+      "classification": "public content",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Content path",
+      "items": [
+        "Three static files become three S3 objects",
+        "Content-Type is derived from the file extension"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Access path",
+      "items": [
+        "The bucket policy is what makes the objects publicly readable",
+        "All data here is a harmless demo page"
+      ]
+    }
+  ]
+}

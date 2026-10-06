@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Anonymous Website Fetch Sequence",
+    "output": "build/diagrams/archify/sequence-anonymous-fetch.html",
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "37a337ff9cdcb3398c7318262f6f3be879838576"
+    },
+    "viewBox": [
+      1080,
+      520
+    ]
+  },
+  "participants": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "unsigned HTTP",
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 29,
+          "end_line": 50,
+          "label": "fetch_file"
+        }
+      ]
+    },
+    {
+      "id": "endpoint",
+      "type": "cloud",
+      "label": "S3 website endpoint",
+      "sublabel": "index.html suffix",
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 70,
+          "end_line": 76,
+          "label": "website configuration"
+        }
+      ]
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "Bucket policy",
+      "sublabel": "Allow * GetObject",
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 54,
+          "end_line": 68,
+          "label": "PublicReadWebsiteFiles"
+        }
+      ]
+    },
+    {
+      "id": "bucket",
+      "type": "database",
+      "label": "S3 bucket",
+      "sublabel": "three objects",
+      "sources": [
+        {
+          "path": "src/spike-0/main.tf",
+          "line": 82,
+          "end_line": 96,
+          "label": "objects + content_type"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 335,
+      "label": "Page"
+    },
+    {
+      "from": 345,
+      "to": 410,
+      "label": "Assets"
+    }
+  ],
+  "messages": [
+    {
+      "id": "get-index",
+      "from": "visitor",
+      "to": "endpoint",
+      "y": 170,
+      "label": "GET /index.html, no signature",
+      "variant": "emphasis"
+    },
+    {
+      "id": "check-policy",
+      "from": "endpoint",
+      "to": "policy",
+      "y": 200,
+      "label": "authorize s3:GetObject",
+      "variant": "security"
+    },
+    {
+      "id": "allow",
+      "from": "policy",
+      "to": "endpoint",
+      "y": 228,
+      "label": "allow (Principal *)",
+      "variant": "return"
+    },
+    {
+      "id": "read-object",
+      "from": "endpoint",
+      "to": "bucket",
+      "y": 260,
+      "label": "read key index.html",
+      "variant": "default"
+    },
+    {
+      "id": "object-bytes",
+      "from": "bucket",
+      "to": "endpoint",
+      "y": 288,
+      "label": "bytes",
+      "variant": "return"
+    },
+    {
+      "id": "page-response",
+      "from": "endpoint",
+      "to": "visitor",
+      "y": 318,
+      "label": "200 text/html",
+      "variant": "return"
+    },
+    {
+      "id": "get-assets",
+      "from": "visitor",
+      "to": "endpoint",
+      "y": 358,
+      "label": "GET style.css, app.js (same path)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "asset-response",
+      "from": "endpoint",
+      "to": "visitor",
+      "y": 388,
+      "label": "200 text/css, text/javascript",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "endpoint",
+      "from": 165,
+      "to": 322,
+      "type": "cloud"
+    },
+    {
+      "participant": "policy",
+      "from": 195,
+      "to": 232,
+      "type": "security"
+    },
+    {
+      "participant": "bucket",
+      "from": 255,
+      "to": 292,
+      "type": "database"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "No credentials",
+      "items": [
+        "curl sends no AWS credentials; the bucket policy alone grants access",
+        "Without a public policy the request is rejected and the E2E fails"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Content types",
+      "items": [
+        "Terraform sets each object's Content-Type from its extension",
+        "E2E checks the type of all three files"
+      ]
+    }
+  ]
+}

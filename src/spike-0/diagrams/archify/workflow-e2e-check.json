@@ -1,0 +1,308 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Spike 0 End-to-End Check",
+    "output": "build/diagrams/archify/workflow-e2e-check.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "37a337ff9cdcb3398c7318262f6f3be879838576"
+    },
+    "viewBox": [
+      1030,
+      652
+    ],
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "external": {
+          "label": "Operator or visitor action"
+        },
+        "backend": {
+          "label": "Setup step"
+        },
+        "cloud": {
+          "label": "Terraform apply"
+        },
+        "security": {
+          "label": "Check or failure"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "op",
+      "label": "Operator"
+    },
+    {
+      "id": "tf",
+      "label": "Target + Terraform"
+    },
+    {
+      "id": "verify",
+      "label": "Verification"
+    },
+    {
+      "id": "exc",
+      "label": "Failures",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "prepare",
+      "label": "Prepare",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "check",
+      "label": "Verify",
+      "fromCol": 3,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "start",
+    "target",
+    "init",
+    "fetch",
+    "check",
+    "done"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "op",
+      "col": 0,
+      "type": "external",
+      "label": "Run E2E",
+      "sublabel": "e2e or aws-e2e",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/Makefile",
+          "line": 91,
+          "end_line": 92,
+          "label": "e2e"
+        },
+        {
+          "path": "src/spike-0/Makefile",
+          "line": 116,
+          "end_line": 117,
+          "label": "aws-e2e"
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "lane": "tf",
+      "col": 1,
+      "type": "backend",
+      "label": "Ready target",
+      "sublabel": "Floci up, or account ok",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 21,
+          "end_line": 21,
+          "label": "local-up"
+        },
+        {
+          "path": "src/spike-0/e2e-aws.sh",
+          "line": 15,
+          "end_line": 15,
+          "label": "aws-target-check"
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "exc",
+      "col": 1,
+      "type": "security",
+      "label": "Stop",
+      "sublabel": "no profile or wrong account",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/Makefile",
+          "line": 94,
+          "end_line": 104,
+          "label": "aws-target-check"
+        }
+      ]
+    },
+    {
+      "id": "init",
+      "lane": "tf",
+      "col": 2,
+      "type": "cloud",
+      "label": "Init + apply",
+      "sublabel": "validate, bucket, objects",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 22,
+          "end_line": 26,
+          "label": "init, validate, apply"
+        }
+      ]
+    },
+    {
+      "id": "fetch",
+      "lane": "verify",
+      "col": 3,
+      "type": "external",
+      "label": "Unsigned GETs",
+      "sublabel": "html, css, js",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 29,
+          "end_line": 54,
+          "label": "fetch_file"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "verify",
+      "col": 4,
+      "type": "security",
+      "label": "Types + text ok?",
+      "sublabel": "Content-Type, page text",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 55,
+          "end_line": 57,
+          "label": "content greps"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "verify",
+      "col": 5,
+      "type": "backend",
+      "label": "Success",
+      "sublabel": "site left running",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 59,
+          "end_line": 64,
+          "label": "success banner"
+        }
+      ]
+    },
+    {
+      "id": "fail",
+      "lane": "exc",
+      "col": 4,
+      "type": "security",
+      "label": "Fail",
+      "sublabel": "no response or mismatch",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-0/e2e.sh",
+          "line": 44,
+          "end_line": 49,
+          "label": "error exits"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "start",
+      "to": "target",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "target",
+      "to": "init",
+      "label": "ready",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "target",
+      "to": "stop",
+      "label": "AWS checks fail",
+      "variant": "security"
+    },
+    {
+      "id": "e4",
+      "from": "init",
+      "to": "fetch",
+      "label": "website_url",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "fetch",
+      "to": "check",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "check",
+      "to": "done",
+      "label": "all match",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e8",
+      "from": "check",
+      "to": "fail",
+      "label": "mismatch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Two entry points",
+      "items": [
+        "make SPIKE=spike-0 e2e runs against Floci",
+        "make SPIKE=spike-0 aws-e2e AWS_PROFILE=... runs against AWS"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Floci retries",
+      "items": [
+        "Local fetch retries up to 30 times, one second apart",
+        "AWS fetch makes a single attempt with a 30 second timeout"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Cleanup",
+      "items": [
+        "Both runs leave the public site up for inspection",
+        "destroy or aws-destroy removes it"
+      ]
+    }
+  ]
+}

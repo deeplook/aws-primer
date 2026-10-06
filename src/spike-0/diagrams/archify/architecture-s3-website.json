@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spike 0 S3 Website",
+    "output": "build/diagrams/archify/architecture-s3-website.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "37a337ff9cdcb3398c7318262f6f3be879838576"
+    }
+  },
+  "components": [
+    { "id": "visitor", "type": "external", "label": "Visitor", "sublabel": "browser or curl, no credentials", "pos": [40, 260], "size": [150, 60],
+      "sources": [{ "path": "src/spike-0/e2e.sh", "line": 29, "end_line": 50, "label": "fetch_file (unsigned GET)" }] },
+    { "id": "endpoint", "type": "cloud", "label": "S3 website endpoint", "sublabel": "plain HTTP, index.html", "pos": [260, 260], "size": [160, 64], "tag": "HTTP only",
+      "sources": [
+        { "path": "src/spike-0/main.tf", "line": 70, "end_line": 76, "label": "website configuration" },
+        { "path": "src/spike-0/main.tf", "line": 102, "end_line": 104, "label": "website_url output" }
+      ] },
+    { "id": "policy", "type": "security", "label": "Bucket policy", "sublabel": "Allow * s3:GetObject", "pos": [490, 120], "size": [150, 64], "tag": "public read",
+      "sources": [{ "path": "src/spike-0/main.tf", "line": 54, "end_line": 68, "label": "PublicReadWebsiteFiles" }] },
+    { "id": "bucket", "type": "database", "label": "S3 bucket", "sublabel": "index.html, style.css, app.js", "pos": [490, 260], "size": [150, 64],
+      "sources": [
+        { "path": "src/spike-0/main.tf", "line": 33, "end_line": 36, "label": "aws_s3_bucket" },
+        { "path": "src/spike-0/main.tf", "line": 82, "end_line": 96, "label": "aws_s3_object.site" }
+      ] },
+    { "id": "pab", "type": "security", "label": "Public access block", "sublabel": "ACLs blocked, policy allowed", "pos": [490, 400], "size": [150, 64],
+      "sources": [{ "path": "src/spike-0/main.tf", "line": 46, "end_line": 52, "label": "block_public_policy = false" }] },
+    { "id": "terraform", "type": "backend", "label": "Terraform", "sublabel": "main.tf, local state", "pos": [760, 260], "size": [150, 64],
+      "sources": [{ "path": "src/spike-0/main.tf", "line": 1, "end_line": 12, "label": "terraform + provider" }] },
+    { "id": "site", "type": "frontend", "label": "site/", "sublabel": "HTML, CSS, JS", "pos": [760, 120], "size": [150, 60],
+      "sources": [{ "path": "src/spike-0/main.tf", "line": 78, "end_line": 80, "label": "fileset site/*" }] },
+    { "id": "floci", "type": "cloud", "label": "Floci", "sublabel": "Docker, :4566", "pos": [1000, 180], "size": [140, 60], "tag": "local",
+      "sources": [{ "path": "src/spike-0/compose.yaml", "line": 1, "end_line": 10, "label": "floci service" }] },
+    { "id": "aws", "type": "cloud", "label": "AWS", "sublabel": "real account + Region", "pos": [1000, 340], "size": [140, 60], "tag": "deployment_target = aws",
+      "sources": [{ "path": "src/spike-0/main.tf", "line": 14, "end_line": 27, "label": "provider switch" }] }
+  ],
+  "connections": [
+    { "id": "visitor-to-endpoint", "from": "visitor", "to": "endpoint", "label": "GET /", "variant": "emphasis" },
+    { "id": "endpoint-to-bucket", "from": "endpoint", "to": "bucket", "label": "read objects", "variant": "emphasis" },
+    { "id": "policy-to-bucket", "from": "policy", "to": "bucket", "label": "permits anonymous", "variant": "security", "fromSide": "bottom", "toSide": "top" },
+    { "id": "pab-to-bucket", "from": "pab", "to": "bucket", "label": "allows policy", "variant": "security", "fromSide": "top", "toSide": "bottom" },
+    { "id": "terraform-to-bucket", "from": "terraform", "to": "bucket", "label": "creates + uploads", "variant": "dashed" },
+    { "id": "site-to-terraform", "from": "site", "to": "terraform", "label": "files", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "terraform-to-floci", "from": "terraform", "to": "floci", "label": "floci.tfvars", "variant": "dashed", "fromSide": "right", "toSide": "left" },
+    { "id": "terraform-to-aws", "from": "terraform", "to": "aws", "label": "aws.tfvars", "variant": "dashed", "fromSide": "right", "toSide": "left" }
+  ],
+  "cards": [
+    { "dot": "rose", "title": "Public by design", "items": ["Anyone with the URL can fetch the files", "Plain HTTP only; the demo page is harmless"] },
+    { "dot": "cyan", "title": "Two targets", "items": ["Floci keeps the bucket local; fixed bucket name", "AWS bucket name includes the 12-digit account ID"] },
+    { "dot": "amber", "title": "Org policies", "items": ["Account or Organizations rules may reject the public policy; E2E then fails"] }
+  ]
+}
