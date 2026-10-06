@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portrait Studio</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/config.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <main class="card">
+    <p class="eyebrow">AWS PRIMER · SPIKE 3</p>
+    <h1>Portrait Studio</h1>
+    <p class="intro">Turn a photo into a polished business portrait. Choose a photo, describe the setting, and keep this page open while it renders.</p>
+    <p id="mode" class="mode" role="note"></p>
+    <form id="portrait-form">
+      <label for="photo">Your photo</label>
+      <input id="photo" name="photo" type="file" accept="image/jpeg,image/png" required>
+      <label for="prompt">Describe your portrait</label>
+      <textarea id="prompt" name="prompt" rows="4" maxlength="1000">Professional photo headshot of this person in a business suit standing alone in an elevator looking into the camera.</textarea>
+      <button type="submit">Create portrait</button>
+    </form>
+    <p id="status" role="status" aria-live="polite">Your image is uploaded privately and removed automatically after one day.</p>
+    <figure id="result" hidden>
+      <img id="portrait" alt="Generated professional portrait">
+      <a id="download" download="professional-portrait.png">Download portrait</a>
+    </figure>
+    <p class="privacy">This demo has no accounts. Anyone with this job page can see its result until it expires. Don’t upload sensitive images.</p>
+  </main>
+</body>
+</html>

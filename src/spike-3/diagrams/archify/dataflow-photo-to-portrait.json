@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Photo to Portrait Data Flow",
+    "output": "build/diagrams/archify/dataflow-photo-to-portrait.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "99777c67df02e76db5777942a4574e838209645d"
+    },
+    "viewBox": [
+      1080,
+      560
+    ]
+  },
+  "stages": [
+    {
+      "label": "Client"
+    },
+    {
+      "label": "Ingest"
+    },
+    {
+      "label": "Queue"
+    },
+    {
+      "label": "Transform"
+    },
+    {
+      "label": "Result"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "photo + prompt",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-3/site/app.js",
+          "line": 20,
+          "end_line": 33,
+          "label": "upload"
+        }
+      ]
+    },
+    {
+      "id": "uploads",
+      "type": "database",
+      "label": "uploads/",
+      "sublabel": "private S3",
+      "stage": 1,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 61,
+          "end_line": 63,
+          "label": "upload_key"
+        },
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 52,
+          "end_line": 56,
+          "label": "bucket"
+        }
+      ]
+    },
+    {
+      "id": "sqs",
+      "type": "messagebus",
+      "label": "Jobs queue",
+      "sublabel": "SQS",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 165,
+          "end_line": 175,
+          "label": "notification"
+        }
+      ]
+    },
+    {
+      "id": "dlq",
+      "type": "messagebus",
+      "label": "DLQ",
+      "sublabel": "3 receives",
+      "stage": 2,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 137,
+          "end_line": 145,
+          "label": "redrive"
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "Lambda",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 179,
+          "end_line": 191,
+          "label": "read, transform, write"
+        }
+      ]
+    },
+    {
+      "id": "bedrock",
+      "type": "cloud",
+      "label": "Bedrock",
+      "sublabel": "or Floci stub",
+      "stage": 3,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 185,
+          "end_line": 188,
+          "label": "backend switch"
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "type": "database",
+      "label": "results/",
+      "sublabel": "5-min presigned GET",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 189,
+          "end_line": 191,
+          "label": "result_key"
+        },
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 92,
+          "end_line": 98,
+          "label": "result_url"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "Job record",
+      "sublabel": "status, TTL",
+      "stage": 4,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 192,
+          "end_line": 197,
+          "label": "COMPLETED"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "photo",
+      "from": "browser",
+      "to": "uploads",
+      "label": "photo (presigned PUT)",
+      "classification": "personal image",
+      "variant": "emphasis",
+      "labelAt": [
+        208,
+        222
+      ]
+    },
+    {
+      "id": "event",
+      "from": "uploads",
+      "to": "sqs",
+      "label": "ObjectCreated",
+      "classification": "event",
+      "variant": "emphasis"
+    },
+    {
+      "id": "failed",
+      "from": "sqs",
+      "to": "dlq",
+      "label": "failed",
+      "classification": "event",
+      "variant": "security",
+      "labelAt": [
+        530,
+        332
+      ]
+    },
+    {
+      "id": "job",
+      "from": "sqs",
+      "to": "worker",
+      "label": "upload event",
+      "classification": "event",
+      "variant": "emphasis"
+    },
+    {
+      "id": "prompt",
+      "from": "worker",
+      "to": "bedrock",
+      "label": "photo + prompt",
+      "classification": "personal image",
+      "variant": "security",
+      "labelAt": [
+        745,
+        332
+      ]
+    },
+    {
+      "id": "portrait",
+      "from": "worker",
+      "to": "results",
+      "label": "portrait.png",
+      "classification": "personal image",
+      "variant": "emphasis",
+      "route": "straight",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -30
+    },
+    {
+      "id": "status",
+      "from": "worker",
+      "to": "jobs",
+      "label": "status",
+      "classification": "job state",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Personal images",
+      "items": [
+        "Photos go to Bedrock for inference on AWS; objects expire after one day"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Floci stub",
+      "items": [
+        "Default local mode copies the input to the result key"
+      ]
+    }
+  ]
+}

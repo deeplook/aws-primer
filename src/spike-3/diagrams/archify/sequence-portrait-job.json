@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Portrait Job Sequence",
+    "output": "build/diagrams/archify/sequence-portrait-job.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "99777c67df02e76db5777942a4574e838209645d"
+    },
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      680
+    ]
+  },
+  "participants": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "app.js",
+      "sources": [
+        {
+          "path": "src/spike-3/site/app.js",
+          "line": 20,
+          "end_line": 33,
+          "label": "flow"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API Lambda",
+      "sublabel": "api_handler",
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 44,
+          "end_line": 101,
+          "label": "api_handler"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "jobs",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 112,
+          "end_line": 130,
+          "label": "jobs table"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "database",
+      "label": "S3",
+      "sublabel": "portraits",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 52,
+          "end_line": 56,
+          "label": "bucket"
+        }
+      ]
+    },
+    {
+      "id": "sqs",
+      "type": "messagebus",
+      "label": "SQS",
+      "sublabel": "jobs queue",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 137,
+          "end_line": 145,
+          "label": "queue"
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "worker_handler",
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 147,
+          "end_line": 220,
+          "label": "worker_handler"
+        }
+      ]
+    },
+    {
+      "id": "bedrock",
+      "type": "cloud",
+      "label": "Bedrock",
+      "sublabel": "or Floci stub",
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 104,
+          "end_line": 144,
+          "label": "_bedrock_image"
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "id": "create",
+      "from": "browser",
+      "to": "api",
+      "label": "POST /jobs",
+      "variant": "emphasis",
+      "y": 170
+    },
+    {
+      "id": "put-job",
+      "from": "api",
+      "to": "ddb",
+      "label": "UPLOADING",
+      "variant": "default",
+      "y": 198
+    },
+    {
+      "id": "urls",
+      "from": "api",
+      "to": "browser",
+      "label": "job_id + PUT URL",
+      "variant": "return",
+      "y": 226
+    },
+    {
+      "id": "upload",
+      "from": "browser",
+      "to": "s3",
+      "label": "PUT input",
+      "variant": "emphasis",
+      "y": 268
+    },
+    {
+      "id": "event",
+      "from": "s3",
+      "to": "sqs",
+      "label": "ObjectCreated",
+      "variant": "dashed",
+      "y": 296
+    },
+    {
+      "id": "deliver",
+      "from": "sqs",
+      "to": "worker",
+      "label": "deliver",
+      "variant": "default",
+      "y": 324
+    },
+    {
+      "id": "lease",
+      "from": "worker",
+      "to": "ddb",
+      "label": "PROCESSING + lease",
+      "variant": "default",
+      "y": 352
+    },
+    {
+      "id": "read",
+      "from": "worker",
+      "to": "s3",
+      "label": "GetObject",
+      "variant": "default",
+      "y": 380
+    },
+    {
+      "id": "model",
+      "from": "worker",
+      "to": "bedrock",
+      "label": "InvokeModel",
+      "variant": "emphasis",
+      "y": 408
+    },
+    {
+      "id": "write",
+      "from": "worker",
+      "to": "s3",
+      "label": "PutObject result",
+      "variant": "emphasis",
+      "y": 436
+    },
+    {
+      "id": "done",
+      "from": "worker",
+      "to": "ddb",
+      "label": "COMPLETED",
+      "variant": "default",
+      "y": 464
+    },
+    {
+      "id": "poll",
+      "from": "browser",
+      "to": "api",
+      "label": "GET /jobs/id",
+      "variant": "emphasis",
+      "y": 506
+    },
+    {
+      "id": "result",
+      "from": "api",
+      "to": "browser",
+      "label": "5-min result URL",
+      "variant": "return",
+      "y": 534
+    },
+    {
+      "id": "download",
+      "from": "browser",
+      "to": "s3",
+      "label": "GET result",
+      "variant": "default",
+      "y": 562
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Duplicate deliveries",
+      "items": [
+        "The worker skips COMPLETED or FAILED jobs and live leases"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failure",
+      "items": [
+        "Empty model output is permanent; other errors retry until 3 receives"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 242,
+      "label": "Create"
+    },
+    {
+      "from": 246,
+      "to": 480,
+      "label": "Upload and process"
+    },
+    {
+      "from": 484,
+      "to": 576,
+      "label": "Fetch"
+    }
+  ]
+}

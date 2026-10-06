@@ -22,6 +22,7 @@ jobs:
         spike:
           - spike-1
           - spike-2
+          - spike-3
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -43,6 +44,7 @@ jobs:
         spike:
           - spike-1
           - spike-2
+          - spike-3
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

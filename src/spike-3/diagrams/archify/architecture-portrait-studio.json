@@ -1,0 +1,456 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spike 3 Portrait Studio",
+    "output": "build/diagrams/archify/architecture-portrait-studio.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "99777c67df02e76db5777942a4574e838209645d"
+    }
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "static page, no accounts",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/site/app.js",
+          "line": 20,
+          "end_line": 33,
+          "label": "create, upload, poll"
+        }
+      ]
+    },
+    {
+      "id": "cf",
+      "type": "cloud",
+      "label": "CloudFront",
+      "sublabel": "HTTPS, OAC",
+      "pos": [
+        250,
+        110
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "AWS only",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 481,
+          "end_line": 522,
+          "label": "distribution"
+        }
+      ]
+    },
+    {
+      "id": "site",
+      "type": "database",
+      "label": "Site bucket",
+      "sublabel": "private static files",
+      "pos": [
+        470,
+        110
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "AWS only",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 425,
+          "end_line": 447,
+          "label": "site bucket"
+        },
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 449,
+          "end_line": 470,
+          "label": "OAC read policy"
+        }
+      ]
+    },
+    {
+      "id": "apigw",
+      "type": "cloud",
+      "label": "HTTP API",
+      "sublabel": "POST/GET /jobs",
+      "pos": [
+        250,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "throttled",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 358,
+          "end_line": 411,
+          "label": "api, routes, stage"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API Lambda",
+      "sublabel": "jobs + presigned URLs",
+      "pos": [
+        470,
+        300
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 285,
+          "end_line": 313,
+          "label": "api function"
+        },
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 44,
+          "end_line": 101,
+          "label": "api_handler"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "Jobs table",
+      "sublabel": "DynamoDB, TTL",
+      "pos": [
+        900,
+        300
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 112,
+          "end_line": 130,
+          "label": "aws_dynamodb_table.jobs"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "database",
+      "label": "Portraits bucket",
+      "sublabel": "private, encrypted, 1 day",
+      "pos": [
+        470,
+        520
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "presigned URLs",
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 52,
+          "end_line": 56,
+          "label": "bucket"
+        },
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 65,
+          "end_line": 110,
+          "label": "access block, encryption, CORS, lifecycle"
+        }
+      ]
+    },
+    {
+      "id": "sqs",
+      "type": "messagebus",
+      "label": "Jobs queue",
+      "sublabel": "SQS, visibility 30 min",
+      "pos": [
+        690,
+        520
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 137,
+          "end_line": 145,
+          "label": "queue + redrive"
+        },
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 147,
+          "end_line": 175,
+          "label": "queue policy + notification"
+        }
+      ]
+    },
+    {
+      "id": "dlq",
+      "type": "messagebus",
+      "label": "Dead-letter queue",
+      "sublabel": "after 3 receives",
+      "pos": [
+        690,
+        400
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 132,
+          "end_line": 135,
+          "label": "jobs_dlq"
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker Lambda",
+      "sublabel": "300s, 1 concurrent on AWS",
+      "pos": [
+        900,
+        520
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-3/main.tf",
+          "line": 315,
+          "end_line": 356,
+          "label": "worker + mapping"
+        },
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 147,
+          "end_line": 220,
+          "label": "worker_handler"
+        }
+      ]
+    },
+    {
+      "id": "bedrock",
+      "type": "cloud",
+      "label": "Bedrock",
+      "sublabel": "Stable Image Ultra",
+      "pos": [
+        1110,
+        520
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "tag": "stub in Floci",
+      "sources": [
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 104,
+          "end_line": 144,
+          "label": "_bedrock_image"
+        },
+        {
+          "path": "src/spike-3/handler.py",
+          "line": 185,
+          "end_line": 188,
+          "label": "stub or Bedrock"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Floci (:4567) or one AWS Region",
+      "wraps": [
+        "cf",
+        "site",
+        "apigw",
+        "api",
+        "jobs",
+        "s3",
+        "sqs",
+        "dlq",
+        "worker"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "page",
+      "from": "browser",
+      "to": "cf",
+      "label": "page",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "origin",
+      "from": "cf",
+      "to": "site",
+      "label": "OAC",
+      "variant": "security"
+    },
+    {
+      "id": "call",
+      "from": "browser",
+      "to": "apigw",
+      "label": "create / poll",
+      "variant": "emphasis"
+    },
+    {
+      "id": "route",
+      "from": "apigw",
+      "to": "api",
+      "label": "invokes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "record",
+      "from": "api",
+      "to": "jobs",
+      "label": "job records",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sign",
+      "from": "api",
+      "to": "s3",
+      "label": "presigns",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "upload",
+      "from": "browser",
+      "to": "s3",
+      "label": "PUT image",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "notify",
+      "from": "s3",
+      "to": "sqs",
+      "label": "event",
+      "variant": "emphasis"
+    },
+    {
+      "id": "redrive",
+      "from": "sqs",
+      "to": "dlq",
+      "label": "failed",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "deliver",
+      "from": "sqs",
+      "to": "worker",
+      "label": "batch 1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "status",
+      "from": "worker",
+      "to": "jobs",
+      "label": "status",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "model",
+      "from": "worker",
+      "to": "bedrock",
+      "label": "InvokeModel",
+      "variant": "emphasis"
+    },
+    {
+      "id": "result",
+      "from": "worker",
+      "to": "s3",
+      "label": "portrait.png",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          975,
+          640
+        ],
+        [
+          545,
+          640
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Public API, private images",
+      "items": [
+        "API and page are public; no user accounts, the job ID is a bearer reference",
+        "Image objects stay private; access is by 15-minute upload and 5-minute download URLs"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Local Floci mode",
+      "items": [
+        "No CloudFront; serve.py serves the page on :8080 and proxies the API",
+        "Default stub copies the input; apply-bedrock calls real Bedrock"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Retries",
+      "items": [
+        "Partial-batch failures retry up to 3 receives, then the job is FAILED and the message moves to the DLQ"
+      ]
+    }
+  ]
+}

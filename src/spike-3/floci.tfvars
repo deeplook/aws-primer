@@ -1,0 +1,6 @@
+deployment_target          = "floci"
+aws_region                 = "us-east-1"
+floci_endpoint_url         = "http://localhost:4567"
+lambda_endpoint_url        = "http://floci:4566"
+floci_presign_endpoint_url = "http://localhost:4567"
+bedrock_model_id           = "stability.stable-image-ultra-v1:1"

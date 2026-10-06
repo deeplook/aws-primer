@@ -12,4 +12,9 @@ repos:
         entry: make SPIKE=spike-2 check-all
         language: system
         pass_filenames: false
+      - id: spike-3-check-all
+        name: Spike 3 Terraform, Python, and shell checks
+        entry: make SPIKE=spike-3 check-all
+        language: system
+        pass_filenames: false
         always_run: true

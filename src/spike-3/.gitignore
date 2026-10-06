@@ -1,0 +1,9 @@
+data/
+output/
+.terraform/
+terraform.tfstate*
+terraform.aws.tfstate*
+worker.zip
+aws.tfvars
+.venv/
+__pycache__/

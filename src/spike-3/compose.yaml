@@ -1,0 +1,11 @@
+services:
+  floci:
+    image: floci/floci:2.1.0
+    ports:
+      - "4567:4566"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      FLOCI_STORAGE_MODE: hybrid
+      FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED: "true"

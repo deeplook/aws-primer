@@ -1,0 +1,354 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Spike 3 End-to-End Check",
+    "output": "build/diagrams/archify/workflow-e2e-check.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "99777c67df02e76db5777942a4574e838209645d"
+    },
+    "viewBox": [
+      1030,
+      652
+    ],
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "external": {
+          "label": "Operator action"
+        },
+        "backend": {
+          "label": "Setup or result"
+        },
+        "cloud": {
+          "label": "Terraform apply"
+        },
+        "security": {
+          "label": "Check or failure"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "op",
+      "label": "Operator"
+    },
+    {
+      "id": "tf",
+      "label": "Target + Terraform"
+    },
+    {
+      "id": "verify",
+      "label": "Verification"
+    },
+    {
+      "id": "exc",
+      "label": "Failures",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "prepare",
+      "label": "Prepare",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "check",
+      "label": "Verify",
+      "fromCol": 3,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "start",
+    "target",
+    "apply",
+    "upload",
+    "poll",
+    "done"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "op",
+      "col": 0,
+      "type": "external",
+      "label": "Run E2E",
+      "sublabel": "e2e or aws-e2e IMAGE=",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/Makefile",
+          "line": 112,
+          "end_line": 113,
+          "label": "e2e"
+        },
+        {
+          "path": "src/spike-3/Makefile",
+          "line": 149,
+          "end_line": 153,
+          "label": "aws-e2e"
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "lane": "tf",
+      "col": 1,
+      "type": "backend",
+      "label": "Ready target",
+      "sublabel": "Floci up, or account ok",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 31,
+          "end_line": 32,
+          "label": "local-up, package"
+        },
+        {
+          "path": "src/spike-3/Makefile",
+          "line": 127,
+          "end_line": 134,
+          "label": "aws-target-check"
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "exc",
+      "col": 1,
+      "type": "security",
+      "label": "Stop",
+      "sublabel": "no profile, wrong account",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/Makefile",
+          "line": 127,
+          "end_line": 134,
+          "label": "aws-target-check"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "lane": "tf",
+      "col": 2,
+      "type": "cloud",
+      "label": "Init + apply",
+      "sublabel": "stack, page, API proxy",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 33,
+          "end_line": 54,
+          "label": "init, apply, serve, page checks"
+        },
+        {
+          "path": "src/spike-3/Makefile",
+          "line": 141,
+          "end_line": 147,
+          "label": "aws-apply"
+        }
+      ]
+    },
+    {
+      "id": "upload",
+      "lane": "verify",
+      "col": 3,
+      "type": "security",
+      "label": "Job + upload ok?",
+      "sublabel": "create job, PUT image",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 56,
+          "end_line": 68,
+          "label": "create and upload"
+        },
+        {
+          "path": "src/spike-3/aws-e2e.py",
+          "line": 32,
+          "end_line": 36,
+          "label": "AWS create and upload"
+        }
+      ]
+    },
+    {
+      "id": "poll",
+      "lane": "verify",
+      "col": 4,
+      "type": "security",
+      "label": "COMPLETED?",
+      "sublabel": "poll job status",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 70,
+          "end_line": 77,
+          "label": "poll 60x1s"
+        },
+        {
+          "path": "src/spike-3/aws-e2e.py",
+          "line": 38,
+          "end_line": 52,
+          "label": "poll 180x2s"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "verify",
+      "col": 5,
+      "type": "backend",
+      "label": "Success",
+      "sublabel": "result checked or saved",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 78,
+          "end_line": 86,
+          "label": "download + cmp"
+        },
+        {
+          "path": "src/spike-3/aws-e2e.py",
+          "line": 42,
+          "end_line": 48,
+          "label": "save portrait"
+        }
+      ]
+    },
+    {
+      "id": "uploadfail",
+      "lane": "exc",
+      "col": 3,
+      "type": "security",
+      "label": "Upload failed",
+      "sublabel": "S3 or API rejected",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 66,
+          "end_line": 67,
+          "label": "upload status check"
+        }
+      ]
+    },
+    {
+      "id": "fail",
+      "lane": "exc",
+      "col": 4,
+      "type": "security",
+      "label": "Failed or timeout",
+      "sublabel": "FAILED or no result",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-3/e2e.sh",
+          "line": 74,
+          "end_line": 77,
+          "label": "FAILED, timeout"
+        },
+        {
+          "path": "src/spike-3/aws-e2e.py",
+          "line": 49,
+          "end_line": 52,
+          "label": "AWS FAILED, timeout"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "start",
+      "to": "target",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "target",
+      "to": "apply",
+      "label": "ready",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "target",
+      "to": "stop",
+      "label": "AWS checks fail",
+      "variant": "security"
+    },
+    {
+      "id": "e4",
+      "from": "apply",
+      "to": "upload",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "upload",
+      "to": "poll",
+      "label": "uploaded",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "poll",
+      "to": "done",
+      "label": "completed",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "upload",
+      "to": "uploadfail",
+      "label": "rejected",
+      "variant": "security"
+    },
+    {
+      "id": "e8",
+      "from": "poll",
+      "to": "fail",
+      "label": "no result",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Local run",
+      "items": [
+        "Tiny PNG through the Floci stub; the result must equal the input",
+        "Page and API proxy are checked first; the stack is destroyed and Floci stopped"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "AWS run",
+      "items": [
+        "Needs IMAGE=...; calls Bedrock and may incur charges",
+        "Polls every 2s up to 180 times, saves the portrait to output/, leaves the stack running"
+      ]
+    }
+  ]
+}

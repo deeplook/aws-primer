@@ -1,0 +1,6 @@
+deployment_target   = "aws"
+aws_region          = "us-west-2"
+aws_account_id      = "REPLACE_WITH_12_DIGIT_ACCOUNT_ID"
+bedrock_model_id    = "stability.stable-image-ultra-v1:1"
+image_strength      = 0.75
+image_retention_days = 1
