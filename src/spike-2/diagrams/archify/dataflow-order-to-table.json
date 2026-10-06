@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Order Event to Table Data Flow",
+    "output": "build/diagrams/archify/dataflow-order-to-table.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    },
+    "viewBox": [
+      1080,
+      560
+    ]
+  },
+  "stages": [
+    {
+      "label": "Publish"
+    },
+    {
+      "label": "Route"
+    },
+    {
+      "label": "Start"
+    },
+    {
+      "label": "Process"
+    },
+    {
+      "label": "Store"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sender",
+      "type": "external",
+      "label": "Publisher",
+      "sublabel": "OrderPlaced",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-2/e2e.sh",
+          "line": 53,
+          "end_line": 58,
+          "label": "entries"
+        }
+      ]
+    },
+    {
+      "id": "bus",
+      "type": "messagebus",
+      "label": "Orders bus",
+      "sublabel": "rule match",
+      "stage": 1,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 279,
+          "end_line": 286,
+          "label": "rule pattern"
+        }
+      ]
+    },
+    {
+      "id": "dlq",
+      "type": "messagebus",
+      "label": "Delivery DLQ",
+      "sublabel": "SQS",
+      "stage": 1,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 225,
+          "end_line": 227,
+          "label": "queue"
+        }
+      ]
+    },
+    {
+      "id": "starter",
+      "type": "backend",
+      "label": "Starter",
+      "sublabel": "Lambda",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 7,
+          "end_line": 18,
+          "label": "starter"
+        }
+      ]
+    },
+    {
+      "id": "sfn",
+      "type": "cloud",
+      "label": "Workflow",
+      "sublabel": "Step Functions",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 198,
+          "end_line": 222,
+          "label": "definition"
+        }
+      ]
+    },
+    {
+      "id": "proc",
+      "type": "backend",
+      "label": "Processor",
+      "sublabel": "validate + save",
+      "stage": 3,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 21,
+          "end_line": 31,
+          "label": "validate"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "Orders table",
+      "sublabel": "accepted",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 32,
+          "end_line": 39,
+          "label": "put_item"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "event",
+      "from": "sender",
+      "to": "bus",
+      "label": "order event",
+      "classification": "order data",
+      "variant": "emphasis"
+    },
+    {
+      "id": "undelivered",
+      "from": "bus",
+      "to": "dlq",
+      "label": "delivery failed",
+      "classification": "order data",
+      "variant": "security",
+      "labelAt": [
+        315,
+        315
+      ]
+    },
+    {
+      "id": "routed",
+      "from": "bus",
+      "to": "starter",
+      "label": "matched event",
+      "classification": "order data",
+      "variant": "emphasis"
+    },
+    {
+      "id": "input",
+      "from": "starter",
+      "to": "sfn",
+      "label": "event as input",
+      "classification": "order data",
+      "variant": "emphasis"
+    },
+    {
+      "id": "payload",
+      "from": "sfn",
+      "to": "proc",
+      "label": "Payload = event",
+      "classification": "order data",
+      "variant": "emphasis",
+      "labelAt": [
+        745,
+        315
+      ]
+    },
+    {
+      "id": "saved",
+      "from": "proc",
+      "to": "ddb",
+      "label": "accepted order",
+      "classification": "order record",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Order record",
+      "items": [
+        "order_id, customer_id, amount_cents, status=accepted",
+        "Amount must be positive or the task fails"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Delivery failures",
+      "items": [
+        "Only EventBridge-to-Lambda delivery failures reach the DLQ"
+      ]
+    }
+  ]
+}

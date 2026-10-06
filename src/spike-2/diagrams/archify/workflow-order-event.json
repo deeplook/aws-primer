@@ -3,7 +3,7 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "OrderPlaced Processing Workflow",
-    "output": ".archify/workflow-order-event-20261001-130013/order-event-workflow.html",
+    "output": "build/diagrams/archify/workflow-order-event.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/deeplook/aws-primer.git",

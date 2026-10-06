@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spike 2 Event Driven Order Workflow",
+    "output": "build/diagrams/archify/architecture-eventbridge-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    }
+  },
+  "components": [
+    {
+      "id": "sender",
+      "type": "external",
+      "label": "Publisher",
+      "sublabel": "events put-events",
+      "pos": [
+        40,
+        140
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/e2e.sh",
+          "line": 53,
+          "end_line": 58,
+          "label": "OrderPlaced entries"
+        }
+      ]
+    },
+    {
+      "id": "bus",
+      "type": "messagebus",
+      "label": "EventBridge bus",
+      "sublabel": "orders",
+      "pos": [
+        250,
+        140
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 275,
+          "end_line": 277,
+          "label": "aws_cloudwatch_event_bus.orders"
+        }
+      ]
+    },
+    {
+      "id": "rule",
+      "type": "cloud",
+      "label": "OrderPlaced rule",
+      "sublabel": "source + detail-type",
+      "pos": [
+        470,
+        140
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "retry 2x, 1h",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 279,
+          "end_line": 305,
+          "label": "rule + target"
+        }
+      ]
+    },
+    {
+      "id": "starter",
+      "type": "backend",
+      "label": "Starter Lambda",
+      "sublabel": "StartExecution",
+      "pos": [
+        710,
+        140
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 146,
+          "end_line": 164,
+          "label": "start_workflow"
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 7,
+          "end_line": 18,
+          "label": "starter"
+        }
+      ]
+    },
+    {
+      "id": "dlq",
+      "type": "messagebus",
+      "label": "Delivery DLQ",
+      "sublabel": "SQS, undeliverable events",
+      "pos": [
+        470,
+        330
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 225,
+          "end_line": 242,
+          "label": "queue + policy"
+        }
+      ]
+    },
+    {
+      "id": "sfn",
+      "type": "cloud",
+      "label": "Step Functions",
+      "sublabel": "STANDARD, 60s",
+      "pos": [
+        710,
+        330
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "retry 2x",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 193,
+          "end_line": 223,
+          "label": "order_workflow"
+        }
+      ]
+    },
+    {
+      "id": "proc",
+      "type": "backend",
+      "label": "Processor Lambda",
+      "sublabel": "amount must be > 0",
+      "pos": [
+        950,
+        330
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 126,
+          "end_line": 144,
+          "label": "process_order"
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 21,
+          "end_line": 41,
+          "label": "handler"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "DynamoDB orders",
+      "sublabel": "key order_id",
+      "pos": [
+        950,
+        500
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 39,
+          "end_line": 48,
+          "label": "aws_dynamodb_table.orders"
+        },
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 32,
+          "end_line": 39,
+          "label": "put_item"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Floci (:4566) or one AWS Region",
+      "wraps": [
+        "bus",
+        "rule",
+        "starter",
+        "dlq",
+        "sfn",
+        "proc",
+        "ddb"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "publish",
+      "from": "sender",
+      "to": "bus",
+      "label": "OrderPlaced",
+      "variant": "emphasis"
+    },
+    {
+      "id": "match",
+      "from": "bus",
+      "to": "rule",
+      "label": "matches",
+      "variant": "emphasis"
+    },
+    {
+      "id": "invoke-starter",
+      "from": "rule",
+      "to": "starter",
+      "label": "invokes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "failed",
+      "from": "rule",
+      "to": "dlq",
+      "label": "delivery failed",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "start",
+      "from": "starter",
+      "to": "sfn",
+      "label": "StartExecution",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "run",
+      "from": "sfn",
+      "to": "proc",
+      "label": "invokes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "store",
+      "from": "proc",
+      "to": "ddb",
+      "label": "PutItem",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Same stack, two targets",
+      "items": [
+        "Floci uses an IAM role for the EventBridge target",
+        "AWS uses a Lambda resource policy for events.amazonaws.com"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "What the DLQ covers",
+      "items": [
+        "Only EventBridge target delivery failures",
+        "A Step Functions or processor failure does not land there"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Scoped roles",
+      "items": [
+        "Processor: DynamoDB PutItem on one table",
+        "Starter: StartExecution (Floci evaluates it against *); workflow: invoke the processor"
+      ]
+    }
+  ]
+}

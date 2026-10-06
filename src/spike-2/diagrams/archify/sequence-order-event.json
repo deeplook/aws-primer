@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Order Event Sequence",
+    "output": "build/diagrams/archify/sequence-order-event.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    },
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      567
+    ]
+  },
+  "participants": [
+    {
+      "id": "e2e",
+      "type": "external",
+      "label": "E2E script",
+      "sublabel": "CLI calls",
+      "sources": [
+        {
+          "path": "src/spike-2/e2e.sh",
+          "line": 42,
+          "end_line": 89,
+          "label": "local flow"
+        },
+        {
+          "path": "src/spike-2/e2e-aws.sh",
+          "line": 12,
+          "end_line": 57,
+          "label": "AWS flow"
+        }
+      ]
+    },
+    {
+      "id": "bus",
+      "type": "messagebus",
+      "label": "EventBridge",
+      "sublabel": "bus + rule",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 279,
+          "end_line": 305,
+          "label": "rule + target"
+        }
+      ]
+    },
+    {
+      "id": "starter",
+      "type": "backend",
+      "label": "Starter Lambda",
+      "sublabel": "handler.starter",
+      "sources": [
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 7,
+          "end_line": 18,
+          "label": "starter"
+        }
+      ]
+    },
+    {
+      "id": "sfn",
+      "type": "cloud",
+      "label": "Step Functions",
+      "sublabel": "ProcessOrder",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 193,
+          "end_line": 223,
+          "label": "state machine"
+        }
+      ]
+    },
+    {
+      "id": "proc",
+      "type": "backend",
+      "label": "Processor Lambda",
+      "sublabel": "handler.handler",
+      "sources": [
+        {
+          "path": "src/spike-2/handler.py",
+          "line": 21,
+          "end_line": 41,
+          "label": "handler"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "orders",
+      "sources": [
+        {
+          "path": "src/spike-2/main.tf",
+          "line": 39,
+          "end_line": 48,
+          "label": "table"
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "id": "put",
+      "from": "e2e",
+      "to": "bus",
+      "label": "put-events OrderPlaced",
+      "variant": "emphasis",
+      "y": 185
+    },
+    {
+      "id": "failed",
+      "from": "bus",
+      "to": "e2e",
+      "label": "FailedEntryCount = 0",
+      "variant": "return",
+      "y": 214
+    },
+    {
+      "id": "route",
+      "from": "bus",
+      "to": "starter",
+      "label": "invoke (rule match)",
+      "variant": "emphasis",
+      "y": 243
+    },
+    {
+      "id": "startx",
+      "from": "starter",
+      "to": "sfn",
+      "label": "StartExecution(event)",
+      "variant": "emphasis",
+      "y": 272
+    },
+    {
+      "id": "arn",
+      "from": "sfn",
+      "to": "starter",
+      "label": "executionArn",
+      "variant": "return",
+      "y": 301
+    },
+    {
+      "id": "task",
+      "from": "sfn",
+      "to": "proc",
+      "label": "invoke (retry 2x)",
+      "variant": "emphasis",
+      "y": 330
+    },
+    {
+      "id": "item",
+      "from": "proc",
+      "to": "ddb",
+      "label": "PutItem status=accepted",
+      "variant": "emphasis",
+      "y": 359
+    },
+    {
+      "id": "result",
+      "from": "proc",
+      "to": "sfn",
+      "label": "order_id, accepted",
+      "variant": "return",
+      "y": 388
+    },
+    {
+      "id": "poll",
+      "from": "e2e",
+      "to": "ddb",
+      "label": "get-item (30x1s local, 90x2s AWS)",
+      "variant": "default",
+      "y": 433
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Async hand-off",
+      "items": [
+        "put-events returns before Lambda runs; the E2E polls DynamoDB"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failure paths",
+      "items": [
+        "amount_cents <= 0 raises ValueError in the processor",
+        "Undeliverable events go to the delivery DLQ, not the workflow"
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 403,
+      "label": "Publish and process"
+    },
+    {
+      "from": 409,
+      "to": 455,
+      "label": "Verify"
+    }
+  ]
+}
