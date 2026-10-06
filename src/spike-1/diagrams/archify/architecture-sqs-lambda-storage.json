@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Spike 1 SQS to Lambda Storage",
+    "output": "build/diagrams/archify/architecture-sqs-lambda-storage.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    }
+  },
+  "components": [
+    {
+      "id": "producer",
+      "type": "external",
+      "label": "Sender",
+      "sublabel": "aws sqs send-message",
+      "pos": [
+        40,
+        280
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 57,
+          "end_line": 61,
+          "label": "send-message"
+        }
+      ]
+    },
+    {
+      "id": "sqs",
+      "type": "messagebus",
+      "label": "SQS queue",
+      "sublabel": "visibility 60s",
+      "pos": [
+        250,
+        280
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 95,
+          "end_line": 98,
+          "label": "aws_sqs_queue.jobs"
+        }
+      ]
+    },
+    {
+      "id": "esm",
+      "type": "cloud",
+      "label": "Event source mapping",
+      "sublabel": "batch size 1",
+      "pos": [
+        460,
+        280
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 132,
+          "end_line": 137,
+          "label": "aws_lambda_event_source_mapping"
+        }
+      ]
+    },
+    {
+      "id": "lambda",
+      "type": "backend",
+      "label": "Worker Lambda",
+      "sublabel": "python3.12, 10s",
+      "pos": [
+        700,
+        280
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 111,
+          "end_line": 130,
+          "label": "aws_lambda_function.worker"
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 7,
+          "end_line": 42,
+          "label": "handler"
+        }
+      ]
+    },
+    {
+      "id": "role",
+      "type": "security",
+      "label": "Worker role",
+      "sublabel": "least privilege",
+      "pos": [
+        700,
+        120
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "no ListBucket",
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 58,
+          "end_line": 87,
+          "label": "role policy"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "database",
+      "label": "S3 uploads",
+      "sublabel": "processed/<id>.txt",
+      "pos": [
+        950,
+        170
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 89,
+          "end_line": 93,
+          "label": "aws_s3_bucket.uploads"
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 29,
+          "end_line": 36,
+          "label": "put_object"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "key message_id",
+      "pos": [
+        950,
+        390
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 100,
+          "end_line": 109,
+          "label": "aws_dynamodb_table.processed"
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 37,
+          "end_line": 39,
+          "label": "put_item"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "type": "external",
+      "label": "IAM probe",
+      "sublabel": "lambda invoke",
+      "pos": [
+        700,
+        500
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "iam_probe event",
+      "sources": [
+        {
+          "path": "src/spike-1/Makefile",
+          "line": 124,
+          "end_line": 130,
+          "label": "iam-probe"
+        },
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 10,
+          "end_line": 22,
+          "label": "probe branch"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Floci (:4566) or one AWS Region",
+      "wraps": [
+        "sqs",
+        "esm",
+        "lambda",
+        "role",
+        "s3",
+        "ddb"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "send",
+      "from": "producer",
+      "to": "sqs",
+      "label": "message",
+      "variant": "emphasis"
+    },
+    {
+      "id": "poll",
+      "from": "esm",
+      "to": "sqs",
+      "label": "polls",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom"
+    },
+    {
+      "id": "invoke",
+      "from": "esm",
+      "to": "lambda",
+      "label": "invokes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "assume",
+      "from": "role",
+      "to": "lambda",
+      "label": "execution role",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "put-s3",
+      "from": "lambda",
+      "to": "s3",
+      "label": "PutObject",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "put-ddb",
+      "from": "lambda",
+      "to": "ddb",
+      "label": "PutItem",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "probe-call",
+      "from": "probe",
+      "to": "lambda",
+      "label": "ListBucket denied",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Same stack, two targets",
+      "items": [
+        "Terraform applies one resource graph to Floci or AWS",
+        "AWS names include the account ID; Floci uses fixed names"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Scoped permissions",
+      "items": [
+        "S3 writes only under processed/*; DynamoDB PutItem on one table",
+        "The worker role has no s3:ListBucket, which the probe checks"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Delivery",
+      "items": [
+        "At-least-once; no redrive policy or partial batch handling",
+        "Same message ID overwrites the same S3 key and DynamoDB item"
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "SQS Message Persistence",
-    "output": ".archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html",
+    "output": "build/diagrams/archify/dataflow-sqs-message.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/deeplook/aws-primer.git",

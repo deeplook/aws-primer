@@ -5,10 +5,15 @@ default target and runs in Docker; it is not installed with `uv`. The same
 Terraform resources can also target a real AWS account using an explicit AWS
 configuration and separate Terraform state.
 
-[Open the interactive data-flow diagram](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html)
+[Open the interactive data-flow diagram](diagrams/dataflow-sqs-message.html)
+
+More interactive diagrams (download the HTML files to open them locally):
+[architecture](diagrams/architecture-sqs-lambda-storage.html),
+[message processing sequence](diagrams/sequence-message-processing.html), and
+[end-to-end check workflow](diagrams/workflow-e2e-check.html).
 for the SQS-to-Lambda-to-storage path and the worker role's permission scope.
 
-[![SQS message data flow](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.visual-check.1440x900.light.png)](.archify/dataflow-sqs-persistence-20261001-130013/sqs-message-dataflow.html)
+[![SQS message data flow](diagrams/dataflow-sqs-message.light.png)](diagrams/dataflow-sqs-message.html)
 
 IAM policy enforcement is enabled here; without that setting, Floci allows
 requests regardless of the calling identity's policies. The AWS provider's

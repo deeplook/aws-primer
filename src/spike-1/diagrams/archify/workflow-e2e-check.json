@@ -1,0 +1,367 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Spike 1 End-to-End Check",
+    "output": "build/diagrams/archify/workflow-e2e-check.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    },
+    "viewBox": [
+      1030,
+      652
+    ],
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "external": {
+          "label": "Operator action"
+        },
+        "backend": {
+          "label": "Setup or result"
+        },
+        "cloud": {
+          "label": "Terraform apply"
+        },
+        "security": {
+          "label": "Check or failure"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "op",
+      "label": "Operator"
+    },
+    {
+      "id": "tf",
+      "label": "Target + Terraform"
+    },
+    {
+      "id": "verify",
+      "label": "Verification"
+    },
+    {
+      "id": "exc",
+      "label": "Failures",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "prepare",
+      "label": "Prepare",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "check",
+      "label": "Verify",
+      "fromCol": 3,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "start",
+    "target",
+    "apply",
+    "probe",
+    "poll",
+    "done"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "op",
+      "col": 0,
+      "type": "external",
+      "label": "Run E2E",
+      "sublabel": "e2e or aws-e2e",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/Makefile",
+          "line": 121,
+          "end_line": 122,
+          "label": "e2e"
+        },
+        {
+          "path": "src/spike-1/Makefile",
+          "line": 172,
+          "end_line": 173,
+          "label": "aws-e2e"
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "lane": "tf",
+      "col": 1,
+      "type": "backend",
+      "label": "Ready target",
+      "sublabel": "Floci up, or account ok",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 43,
+          "end_line": 44,
+          "label": "local-up, package"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 12,
+          "end_line": 12,
+          "label": "aws-target-check"
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "lane": "exc",
+      "col": 1,
+      "type": "security",
+      "label": "Stop",
+      "sublabel": "no profile or wrong account",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/Makefile",
+          "line": 132,
+          "end_line": 141,
+          "label": "aws-target-check"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 7,
+          "end_line": 10,
+          "label": "profile check"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "lane": "tf",
+      "col": 2,
+      "type": "cloud",
+      "label": "Init + apply",
+      "sublabel": "role, queue, Lambda, tables",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 45,
+          "end_line": 50,
+          "label": "init, validate, apply"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 13,
+          "end_line": 13,
+          "label": "aws-apply"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": "verify",
+      "col": 3,
+      "type": "security",
+      "label": "IAM probe",
+      "sublabel": "ListBucket must be denied",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 51,
+          "end_line": 51,
+          "label": "iam-probe"
+        },
+        {
+          "path": "src/spike-1/assert_iam_probe.py",
+          "line": 13,
+          "end_line": 24,
+          "label": "assert"
+        }
+      ]
+    },
+    {
+      "id": "poll",
+      "lane": "verify",
+      "col": 4,
+      "type": "security",
+      "label": "Body stored?",
+      "sublabel": "send, then poll S3 + DynamoDB",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 57,
+          "end_line": 84,
+          "label": "send and poll"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 21,
+          "end_line": 48,
+          "label": "AWS send and poll"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "verify",
+      "col": 5,
+      "type": "backend",
+      "label": "Success",
+      "sublabel": "local torn down, AWS kept",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 8,
+          "end_line": 23,
+          "label": "cleanup"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 42,
+          "end_line": 44,
+          "label": "AWS left running"
+        }
+      ]
+    },
+    {
+      "id": "probefail",
+      "lane": "exc",
+      "col": 3,
+      "type": "security",
+      "label": "Probe failed",
+      "sublabel": "role allowed ListBucket",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/assert_iam_probe.py",
+          "line": 19,
+          "end_line": 21,
+          "label": "mismatch"
+        }
+      ]
+    },
+    {
+      "id": "timeout",
+      "lane": "exc",
+      "col": 4,
+      "type": "security",
+      "label": "Timeout",
+      "sublabel": "nothing stored in time",
+      "width": 132,
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 86,
+          "end_line": 88,
+          "label": "timeout"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 50,
+          "end_line": 52,
+          "label": "AWS timeout"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "start",
+      "to": "target",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "target",
+      "to": "apply",
+      "label": "ready",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "target",
+      "to": "stop",
+      "label": "AWS checks fail",
+      "variant": "security"
+    },
+    {
+      "id": "e4",
+      "from": "apply",
+      "to": "probe",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "probe",
+      "to": "poll",
+      "label": "denied",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "poll",
+      "to": "done",
+      "label": "match",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "probe",
+      "to": "probefail",
+      "label": "allowed",
+      "variant": "security"
+    },
+    {
+      "id": "e8",
+      "from": "poll",
+      "to": "timeout",
+      "label": "no match",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Two entry points",
+      "items": [
+        "make e2e runs on Floci and always destroys the stack and stops Floci",
+        "make SPIKE=spike-1 aws-e2e AWS_PROFILE=... leaves AWS resources running"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Polling",
+      "items": [
+        "Local: 30 tries, one second apart",
+        "AWS: 60 tries, two seconds apart"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "AWS cleanup",
+      "items": [
+        "Empty the S3 bucket first; aws-destroy refuses a non-empty bucket"
+      ]
+    }
+  ]
+}

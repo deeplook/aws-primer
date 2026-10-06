@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "SQS Message Processing Sequence",
+    "output": "build/diagrams/archify/sequence-message-processing.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/deeplook/aws-primer.git",
+      "link_mode": "local-only",
+      "revision": "d54d04e52c710a40de659e00372f8edada25b2a3"
+    },
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      680
+    ]
+  },
+  "participants": [
+    {
+      "id": "e2e",
+      "type": "external",
+      "label": "E2E script",
+      "sublabel": "CLI calls",
+      "sources": [
+        {
+          "path": "src/spike-1/e2e.sh",
+          "line": 43,
+          "end_line": 88,
+          "label": "local flow"
+        },
+        {
+          "path": "src/spike-1/e2e-aws.sh",
+          "line": 12,
+          "end_line": 51,
+          "label": "AWS flow"
+        }
+      ]
+    },
+    {
+      "id": "sqs",
+      "type": "messagebus",
+      "label": "SQS queue",
+      "sublabel": "jobs",
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 95,
+          "end_line": 98,
+          "label": "queue"
+        }
+      ]
+    },
+    {
+      "id": "esm",
+      "type": "cloud",
+      "label": "Lambda poller",
+      "sublabel": "event source mapping",
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 132,
+          "end_line": 137,
+          "label": "mapping"
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker Lambda",
+      "sublabel": "handler.py",
+      "sources": [
+        {
+          "path": "src/spike-1/handler.py",
+          "line": 7,
+          "end_line": 42,
+          "label": "handler"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "database",
+      "label": "S3 uploads",
+      "sublabel": "processed/",
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 72,
+          "end_line": 74,
+          "label": "PutObject only under processed/*"
+        }
+      ]
+    },
+    {
+      "id": "ddb",
+      "type": "database",
+      "label": "DynamoDB",
+      "sublabel": "processed table",
+      "sources": [
+        {
+          "path": "src/spike-1/main.tf",
+          "line": 100,
+          "end_line": 109,
+          "label": "table"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 258,
+      "label": "IAM probe"
+    },
+    {
+      "from": 264,
+      "to": 506,
+      "label": "Deliver message"
+    },
+    {
+      "from": 512,
+      "to": 579,
+      "label": "Verify"
+    }
+  ],
+  "messages": [
+    {
+      "id": "probe",
+      "from": "e2e",
+      "to": "worker",
+      "y": 185,
+      "label": "invoke {iam_probe: true}",
+      "variant": "security"
+    },
+    {
+      "id": "list",
+      "from": "worker",
+      "to": "s3",
+      "y": 214,
+      "label": "ListObjectsV2",
+      "variant": "security"
+    },
+    {
+      "id": "denied",
+      "from": "s3",
+      "to": "worker",
+      "y": 243,
+      "label": "AccessDenied",
+      "variant": "return"
+    },
+    {
+      "id": "send",
+      "from": "e2e",
+      "to": "sqs",
+      "y": 288,
+      "label": "send-message(body)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mid",
+      "from": "sqs",
+      "to": "e2e",
+      "y": 317,
+      "label": "MessageId",
+      "variant": "return"
+    },
+    {
+      "id": "receive",
+      "from": "esm",
+      "to": "sqs",
+      "y": 346,
+      "label": "ReceiveMessage",
+      "variant": "default"
+    },
+    {
+      "id": "batch",
+      "from": "sqs",
+      "to": "esm",
+      "y": 375,
+      "label": "1 message",
+      "variant": "return"
+    },
+    {
+      "id": "call",
+      "from": "esm",
+      "to": "worker",
+      "y": 404,
+      "label": "invoke(Records)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "put",
+      "from": "worker",
+      "to": "s3",
+      "y": 433,
+      "label": "PutObject processed/<id>.txt",
+      "variant": "emphasis"
+    },
+    {
+      "id": "item",
+      "from": "worker",
+      "to": "ddb",
+      "y": 462,
+      "label": "PutItem message_id, body",
+      "variant": "emphasis"
+    },
+    {
+      "id": "delete",
+      "from": "esm",
+      "to": "sqs",
+      "y": 491,
+      "label": "DeleteMessage",
+      "variant": "dashed"
+    },
+    {
+      "id": "get-item",
+      "from": "e2e",
+      "to": "ddb",
+      "y": 536,
+      "label": "get-item (retry: 30x1s local, 60x2s AWS)",
+      "variant": "default"
+    },
+    {
+      "id": "head",
+      "from": "e2e",
+      "to": "s3",
+      "y": 565,
+      "label": "head-object / cp",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "IAM denial",
+      "items": [
+        "The probe invokes the Lambda directly, outside the SQS path",
+        "It requires AccessDenied; allowed ListBucket fails the E2E"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Success rule",
+      "items": [
+        "Pass only when the exact body is in DynamoDB and the S3 object matches"
+      ]
+    }
+  ]
+}
